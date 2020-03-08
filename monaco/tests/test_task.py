@@ -1,6 +1,5 @@
-import pytest
 from datetime import datetime
-from monaco.task import Task
+from monaco import Task
 
 
 def test_task_init():
@@ -39,7 +38,6 @@ def test_task_defaults():
     assert not t1.est_min
     assert not t1.est_max
     assert t1.depends_on == []
-
 
 
 def test_task_estimate():

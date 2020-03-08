@@ -1,10 +1,10 @@
 class Project:
 
-    def __init__(self, name=None, tasks=[]):
+    def __init__(self, name=None):
         self.name = name
-        self.tasks = tasks
+        self.tasks = []
 
-    def add(self, task):
+    def add_task(self, task):
         self.tasks.append(task)
 
     def estimate(self):

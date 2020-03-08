@@ -16,8 +16,8 @@ class Task:
         self.depends_on = depends_on
 
     def estimate(self):
-        est = random.triangular(self.est_min, self.est_nom,
-                                self.est_max)
+        est = random.triangular(low=self.est_min, mode=self.est_nom,
+                                high=self.est_max)
         return est
 
 
