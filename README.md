@@ -4,5 +4,3 @@ monaco
 </h1>
 
 Simple task planner with monte carlo simulation.
-
-
