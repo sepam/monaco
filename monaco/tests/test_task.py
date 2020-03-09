@@ -24,9 +24,7 @@ def test_task_init():
     assert t1.est_nom == "2020-01-20"
     assert t1.est_max == "2020-01-30"
     assert t1.depends_on == []
-
     assert t2.depends_on == [t1]
-
     assert t2.cdate.date() == datetime.now().date()
 
 

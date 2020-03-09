@@ -4,7 +4,7 @@ from monaco import Project
 
 def test_project_init_default():
     p1 = Project()
-    assert p1.name == None
+    assert not p1.name
     assert type(p1.tasks) == list
 
 
