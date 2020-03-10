@@ -1,6 +1,7 @@
 """Logic for creating Tasks"""
 from datetime import datetime
 import random
+import math
 
 
 class Task:
@@ -18,7 +19,7 @@ class Task:
     def estimate(self):
         est = random.triangular(low=self.est_min, mode=self.est_nom,
                                 high=self.est_max)
-        return est
+        return math.floor(est)
 
 
 

@@ -40,4 +40,4 @@ def test_task_defaults():
 
 def test_task_estimate():
     t1 = Task(est_min=1, est_nom=2, est_max=3)
-    assert type(t1.estimate()) == float
+    assert type(t1.estimate()) == int

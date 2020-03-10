@@ -1,5 +1,7 @@
 from monaco import Task
 from monaco import Project
+from collections import Counter
+
 
 
 def test_project_init_default():
@@ -44,5 +46,17 @@ def test_project_estimate():
     p.add_task(t1)
     p.add_task(t2)
     est = p.estimate()
+    assert p.p_est
     assert est > 7
-    assert type(est) == float
+    assert type(est) == int
+
+
+def test_project_simulate():
+    t1 = Task(name='Analysis', est_min=2, est_nom=3, est_max=7)
+    t2 = Task(name='Experiment', est_min=30, est_nom=35, est_max=40)
+    p = Project(name='High Score Bypass')
+    p.add_task(t1)
+    p.add_task(t2)
+    sim_runs = p._simulate(n=100)
+    assert type(sim_runs) == Counter
+
