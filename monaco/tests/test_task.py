@@ -1,5 +1,6 @@
 from datetime import datetime
 from monaco import Task
+import pytest
 
 
 def test_task_init():
@@ -15,7 +16,7 @@ def test_task_init():
               est_nom='2020-01-20',
               est_min='2020-01-10',
               est_max='2020-01-30',
-              depends_on=[t1]
+              estimator='uniform'
               )
 
     assert t1.name == "write PRD"
@@ -24,8 +25,16 @@ def test_task_init():
     assert t1.est_nom == "2020-01-20"
     assert t1.est_max == "2020-01-30"
     assert t1.depends_on == []
+
+    t2.depends_on.append(t1)
     assert t2.depends_on == [t1]
     assert t2.cdate.date() == datetime.now().date()
+    assert t2.estimator == 'uniform'
+
+
+def test_task_invalid_estimator():
+    with pytest.raises(Exception):
+        Task(estimator='mega')
 
 
 def test_task_defaults():
@@ -35,6 +44,7 @@ def test_task_defaults():
     assert not t1.est_nom
     assert not t1.est_min
     assert not t1.est_max
+    assert t1.estimator == 'triangular'
     assert t1.depends_on == []
 
 
