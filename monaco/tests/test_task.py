@@ -19,6 +19,15 @@ def test_task_init():
               estimator='uniform'
               )
 
+    t3 = Task(name="write PRD",
+              due_date='2020-01-25',
+              est_nom='2020-01-20',
+              est_min='2020-01-10',
+              est_max='2020-01-30',
+              estimator='triangular'
+              )
+
+
     assert t1.name == "write PRD"
     assert t1.due_date == "2020-01-25"
     assert t1.est_min == '2020-01-10'
@@ -30,6 +39,9 @@ def test_task_init():
     assert t2.depends_on == [t1]
     assert t2.cdate.date() == datetime.now().date()
     assert t2.estimator == 'uniform'
+
+    t3.depends_on.append(t1)
+    assert t3.estimator == 'triangular'
 
 
 def test_task_invalid_estimator():
@@ -49,5 +61,7 @@ def test_task_defaults():
 
 
 def test_task_estimate():
-    t1 = Task(est_min=1, est_nom=2, est_max=3)
+    t1 = Task(est_min=1, est_nom=2, est_max=3, estimator='uniform')
+    assert type(t1.estimate()) == int
+    t2 = Task(est_min=1, est_nom=2, est_max=3, estimator='triangular')
     assert type(t1.estimate()) == int

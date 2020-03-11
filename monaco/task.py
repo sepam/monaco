@@ -21,19 +21,13 @@ class Task:
             raise Exception('not a valid estimator')
 
 
-    def estimate(self, estimator='triangular'):
+    def estimate(self):
 
-        if estimator == 'triangular':
+        if self.estimator == 'triangular':
             est = random.triangular(low=self.est_min, mode=self.est_nom,
                                     high=self.est_max)
 
-        elif estimator == 'uniform':
+        elif self.estimator == 'uniform':
             est = random.uniform(self.est_min, self.est_max)
 
-        else:
-            raise Exception("Unknown estimation method, please use 'uniform' or 'triangular'")
-
         return math.floor(est)
-
-
-
