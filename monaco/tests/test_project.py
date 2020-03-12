@@ -1,7 +1,7 @@
 from monaco import Task
 from monaco import Project
 from collections import Counter
-import matplotlib.pyplot as plt
+import pytest
 
 
 def test_project_init_default():
@@ -18,6 +18,7 @@ def test_project_init_params():
     p2.add_task(t2)
     assert len(p2.tasks) == 2
     assert p2.name == 'Experiment'
+
 
 def test_project_add_one_task():
     t = Task(name='example')
@@ -39,8 +40,8 @@ def test_project_add_two_task():
 
 
 def test_project_estimate():
-    t1 = Task(name='Analysis', min=2, median=3, max=7)
-    t2 = Task(name='Experiment', min=30, median=35, max=40)
+    t1 = Task(name='Analysis', min=2, mode=3, max=7)
+    t2 = Task(name='Experiment', min=30, mode=35, max=40)
     p = Project(name='High Score Bypass')
     p.add_task(t1)
     p.add_task(t2)
@@ -51,8 +52,8 @@ def test_project_estimate():
 
 
 def test_project_simulate(n=1000):
-    t1 = Task(name='Analysis', min=2, median=3, max=7)
-    t2 = Task(name='Experiment', min=30, median=35, max=40)
+    t1 = Task(name='Analysis', min=2, mode=3, max=7)
+    t2 = Task(name='Experiment', min=30, mode=35, max=40)
     p = Project(name='High Score Bypass')
     p.add_task(t1)
     p.add_task(t2)
@@ -61,10 +62,10 @@ def test_project_simulate(n=1000):
 
 
 def test_plot_hist(n=1000):
-    t1 = Task(name='Analysis', min=2, median=3, max=7, estimator='triangular')
-    t2 = Task(name='Experiment', min=30, median=35, max=40, estimator='triangular')
-    t3 = Task(name='Evaluation', min=30, median=35, max=40, estimator='triangular')
-    t4 = Task(name='Monitoring', min=30, median=35, max=40, estimator='triangular')
+    t1 = Task(name='Analysis', min=2, mode=3, max=7, estimator='triangular')
+    t2 = Task(name='Experiment', min=30, mode=35, max=40, estimator='triangular')
+    t3 = Task(name='Evaluation', min=30, mode=35, max=40, estimator='triangular')
+    t4 = Task(name='Monitoring', min=30, mode=35, max=40, estimator='triangular')
     p = Project(name='High Score Bypass')
     p.add_task(t1)
     p.add_task(t2)
@@ -74,10 +75,10 @@ def test_plot_hist(n=1000):
 
 
 def test_plot_cumul(n=1000):
-    t1 = Task(name='Analysis', min=2, median=3, max=7, estimator='triangular')
-    t2 = Task(name='Experiment', min=30, median=35, max=40, estimator='triangular')
-    t3 = Task(name='Evaluation', min=30, median=35, max=40, estimator='triangular')
-    t4 = Task(name='Monitoring', min=30, median=35, max=40, estimator='triangular')
+    t1 = Task(name='Analysis', min=2, mode=3, max=7, estimator='triangular')
+    t2 = Task(name='Experiment', min=30, mode=35, max=40, estimator='triangular')
+    t3 = Task(name='Evaluation', min=30, mode=35, max=40, estimator='triangular')
+    t4 = Task(name='Monitoring', min=30, mode=35, max=40, estimator='triangular')
     p = Project(name='High Score Bypass')
     p.add_task(t1)
     p.add_task(t2)
