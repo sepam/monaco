@@ -17,8 +17,7 @@ def test_project_init_params():
     p2.add_task(t1)
     p2.add_task(t2)
     assert len(p2.tasks) == 2
-    return
-
+    assert p2.name == 'Experiment'
 
 def test_project_add_one_task():
     t = Task(name='example')
@@ -40,48 +39,48 @@ def test_project_add_two_task():
 
 
 def test_project_estimate():
-    t1 = Task(name='Analysis', est_min=2, est_nom=3, est_max=7)
-    t2 = Task(name='Experiment', est_min=30, est_nom=35, est_max=40)
+    t1 = Task(name='Analysis', min=2, median=3, max=7)
+    t2 = Task(name='Experiment', min=30, median=35, max=40)
     p = Project(name='High Score Bypass')
     p.add_task(t1)
     p.add_task(t2)
     est = p.estimate()
     assert p.p_est
     assert est > 7
-    assert type(est) == int
+    assert type(est) == float
 
 
-def test_project_simulate():
-    t1 = Task(name='Analysis', est_min=2, est_nom=3, est_max=7)
-    t2 = Task(name='Experiment', est_min=30, est_nom=35, est_max=40)
+def test_project_simulate(n=1000):
+    t1 = Task(name='Analysis', min=2, median=3, max=7)
+    t2 = Task(name='Experiment', min=30, median=35, max=40)
     p = Project(name='High Score Bypass')
     p.add_task(t1)
     p.add_task(t2)
-    sim_runs = p._simulate(n=100)
+    sim_runs = p._simulate(n=n)
     assert type(sim_runs) == Counter
 
 
-def test_plot_hist():
-    t1 = Task(name='Analysis', est_min=2, est_nom=3, est_max=7, estimator='triangular')
-    t2 = Task(name='Experiment', est_min=30, est_nom=35, est_max=40, estimator='triangular')
-    t3 = Task(name='Evaluation', est_min=30, est_nom=35, est_max=40, estimator='triangular')
-    t4 = Task(name='Monitoring', est_min=30, est_nom=35, est_max=40, estimator='triangular')
+def test_plot_hist(n=1000):
+    t1 = Task(name='Analysis', min=2, median=3, max=7, estimator='triangular')
+    t2 = Task(name='Experiment', min=30, median=35, max=40, estimator='triangular')
+    t3 = Task(name='Evaluation', min=30, median=35, max=40, estimator='triangular')
+    t4 = Task(name='Monitoring', min=30, median=35, max=40, estimator='triangular')
     p = Project(name='High Score Bypass')
     p.add_task(t1)
     p.add_task(t2)
     p.add_task(t3)
     p.add_task(t4)
-    p.plot()
+    p.plot(n=n)
 
 
-def test_plot_cumul():
-    t1 = Task(name='Analysis', est_min=2, est_nom=3, est_max=7, estimator='triangular')
-    t2 = Task(name='Experiment', est_min=30, est_nom=35, est_max=40, estimator='triangular')
-    t3 = Task(name='Evaluation', est_min=30, est_nom=35, est_max=40, estimator='triangular')
-    t4 = Task(name='Monitoring', est_min=30, est_nom=35, est_max=40, estimator='triangular')
+def test_plot_cumul(n=1000):
+    t1 = Task(name='Analysis', min=2, median=3, max=7, estimator='triangular')
+    t2 = Task(name='Experiment', min=30, median=35, max=40, estimator='triangular')
+    t3 = Task(name='Evaluation', min=30, median=35, max=40, estimator='triangular')
+    t4 = Task(name='Monitoring', min=30, median=35, max=40, estimator='triangular')
     p = Project(name='High Score Bypass')
     p.add_task(t1)
     p.add_task(t2)
     p.add_task(t3)
     p.add_task(t4)
-    p.plot(hist=False)
+    p.plot(hist=False, n=n)

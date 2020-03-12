@@ -6,14 +6,14 @@ import math
 
 class Task:
 
-    def __init__(self, name=None, due_date=None, est_nom=None,
-                 est_min=None, est_max=None, estimator='triangular'):
+    def __init__(self, name=None, due_date=None, median=None,
+                 min=None, max=None, estimator='triangular'):
         self.cdate = datetime.now()
         self.name = name
         self.due_date = due_date
-        self.est_nom = est_nom
-        self.est_min = est_min
-        self.est_max = est_max
+        self.median = median
+        self.min = min
+        self.max = max
         self.estimator = estimator
         self.depends_on = []
 
@@ -24,10 +24,11 @@ class Task:
     def estimate(self):
 
         if self.estimator == 'triangular':
-            est = random.triangular(low=self.est_min, mode=self.est_nom,
-                                    high=self.est_max)
+            est = random.triangular(low=self.min, mode=self.median,
+                                    high=self.max)
 
         elif self.estimator == 'uniform':
-            est = random.uniform(self.est_min, self.est_max)
+            est = random.uniform(self.min, self.max)
 
-        return math.floor(est)
+        # return math.floor(est)
+        return est
