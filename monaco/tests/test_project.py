@@ -61,6 +61,7 @@ def test_project_simulate(n=1000):
     assert type(sim_runs) == Counter
 
 
+@pytest.mark.skip
 def test_plot_hist(n=1000):
     t1 = Task(name='Analysis', min=2, mode=3, max=7, estimator='triangular')
     t2 = Task(name='Experiment', min=30, mode=35, max=40, estimator='triangular')
@@ -74,6 +75,7 @@ def test_plot_hist(n=1000):
     p.plot(n=n)
 
 
+@pytest.mark.skip
 def test_plot_cumul(n=1000):
     t1 = Task(name='Analysis', min=2, mode=3, max=7, estimator='triangular')
     t2 = Task(name='Experiment', min=30, mode=35, max=40, estimator='triangular')
