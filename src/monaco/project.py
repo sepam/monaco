@@ -3,7 +3,7 @@ from collections import Counter
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
-from monaco import Task
+from src.monaco import Task
 
 
 class Project(Task):
