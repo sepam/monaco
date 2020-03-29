@@ -1,2 +1,3 @@
 # Project exclude paths
 /venv/
+/src/monaco.egg-info/
