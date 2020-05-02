@@ -17,7 +17,7 @@ factors that can not always be controlled or foreseen. Monaco helps you make
 better task estimations by modeling tasks as **random processes**.
 
 <h1 align="center">
-<img src="tutorial/task_definition.png" alt="Task" height="395" width="698" align="center"/>
+<img src="example/task_definition.png" alt="Task" height="395" width="698" align="center"/>
 </h1>
 <br>
 
@@ -30,7 +30,7 @@ Defining a **Task** is easy:
 **Projects** are sequences of tasks:
 
 <h1 align="center">
-<img src="tutorial/project_estimation.png" alt="Project" height="130" width="1121" align="center"/>
+<img src="example/project_estimation.png" alt="Project" height="130" width="1121" align="center"/>
 </h1>
 
 <br>
@@ -62,12 +62,12 @@ many independent random processes approaches a normal distribution.
 
     plot_data = p.plot(n=10000)
 
-<div align="center"> <img src="tutorial/monte_carlo_estimation.png" alt="Project" height="478" width="593" align="center"/> </div>
+<div align="center"> <img src="example/monte_carlo_estimation.png" alt="Project" height="478" width="593" align="center"/> </div>
 <br>
 
 The **likelihood of completing a project** can be read from the 
 cumulative distribution. In this example there is an 80% chance that the 
 project will be completed under 23 days.
 
-<div align="center"> <img src="tutorial/monte_carlo_cumulative.png" alt="Project" height="478" width="593" align="center"/> </div>
+<div align="center"> <img src="example/monte_carlo_cumulative.png" alt="Project" height="478" width="593" align="center"/> </div>
 
