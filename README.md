@@ -38,11 +38,11 @@ Defining a **Task** is easy:
 **Tasks** can be added to **Projects**:
 
     # initiate project
-    p = Project(name='My Example Project')
+    p = Project(name='Build Machine Learning App')
 
     # define tasks and duration in number of days
-    t1 = Task(name='Problem definition', min=1, max=5, estimator='uniform')
-    t2 = Task(name='EDA', min=1, mode=2, max=3, estimator='uniform')
+    t1 = Task(name='Train model', min=1, max=5, estimator='uniform')
+    t2 = Task(name='Deploy Application', min=1, mode=2, max=3, estimator='uniform')
     
     # define task sequence
     p.add_task(t1)
