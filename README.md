@@ -2,7 +2,7 @@
 
 <h1 align="left">
 monaco
-<img src="roulette.jpg" alt="monaco" height="100" width="100" align="right"/>
+<img src="roulette.jpg" alt="monaco" height="120" width="120" align="right"/>
 </h1>
 
 <br>
@@ -17,7 +17,7 @@ factors that can not always be controlled or foreseen. Monaco helps you make
 better task estimations by modeling tasks as **random processes**.
 
 <h1 align="center">
-<img src="tutorial/task_definition.png" alt="Task" height="493" width="873" align="center"/>
+<img src="tutorial/task_definition.png" alt="Task" height="395" width="698" align="center"/>
 </h1>
 <br>
 
