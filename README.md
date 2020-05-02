@@ -4,24 +4,21 @@
 monaco
 <img src="roulette.jpg" alt="monaco" height="100" width="100" align="right"/>
 </h1>
-
-Monaco helps you make better estimations for the duration of your tasks and projects.
-
 ---
 
 ## Estimating tasks and projects
-Estimating the time it takes to complete a task or project is one the most 
-biggest challenges in task and project planning.
+Estimating the time it takes to complete a task or project is one the 
+biggest challenges in task and project planning. Task duration depends on many 
+factors that can not always be controlled or foreseen.
 
-The time it takes to complete as task is dependent on many factors 
-that can not always be controlled or foreseen.
-
-Monaco helps you make better task estimations by modeling tasks as a stochastic process:
+Monaco helps you make better task estimations by modeling tasks as random processes:
 
 <h1 align="center">
 <img src="tutorial/task_definition.png" alt="Task" height="493" width="873" align="center"/>
 </h1>
 <br>
+
+Defining a task is easy:
 
     task = Task(name='Task', min=3, mode=4, max=9, estimator='triangular')
 
@@ -30,10 +27,12 @@ Monaco helps you make better task estimations by modeling tasks as a stochastic 
 Projects are sequences of tasks:
 
 <h1 align="center">
-<img src="tutorial/project_estimation.png" alt="Project" height="344" width="2242" align="center"/>
+<img src="tutorial/project_estimation.png" alt="Project" height="344/2" width="2242/2" align="center"/>
 </h1>
 
 <br>
+
+Tasks can be added to projects:
 
     # initiate project
     p = Project(name='My Example Project')
@@ -54,17 +53,13 @@ Monaco can estimate the duration of a project through Monte Carlo Simulation
 of many project cycles. The central limit theorem guarantees that the sum of 
 many independent random processes approaches a normal distribution.   
 
-Projects can be simulated easily:
+Simulation can be done with a single line of code:
 
     plot_data = p.plot(n=10000)
 
-<br>
-<div> <img src="tutorial/project_estimation.png" alt="Project" height="478" width="593" align="center"/> </div>
-<br>
+<div align="center"> <img src="tutorial/monte_carlo_estimation.png" alt="Project" height="478" width="593" align="center"/> </div>
 
 Visualizing the cumulative distribution allows to easily read out the 
 likelihood of completing withing a number of days:
 
-<br>
-<div> <img src="tutorial/monte_carlo_cumulative.png" alt="Project" height="478" width="593" align="center"/> </div>
-<br>
+<div align="center"> <img src="tutorial/monte_carlo_cumulative.png" alt="Project" height="478" width="593" align="center"/> </div>
