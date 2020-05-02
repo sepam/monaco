@@ -12,8 +12,7 @@ monaco
 
 
 Estimating the time it takes to complete a task or project is one the 
-biggest challenges in task and project planning. Task duration depends on many 
-factors that can not always be controlled or foreseen. Monaco helps you make 
+biggest challenges in task and project planning. Monaco helps you make 
 better task estimations by modeling tasks as **random processes**.
 
 <h1 align="center">
@@ -37,30 +36,31 @@ Defining a **Task** is easy:
 
 **Tasks** can be added to **Projects**:
 
-    # initiate project
-    p = Project(name='Build Machine Learning App')
+    # initiate a project
+    project = Project(name='Build Machine Learning App')
 
-    # define tasks and duration in number of days
-    t1 = Task(name='Train model', min=1, max=5, estimator='uniform')
-    t2 = Task(name='Deploy Application', min=1, mode=2, max=3, estimator='uniform')
+    # define tasks and duration (in this case: number of days)
+    task1 = Task(name='Train model', min=1, max=5, estimator='uniform')
+    task2 = Task(name='Deploy Application', min=1, mode=2, max=3, estimator='uniform')
     
     # define task sequence
-    p.add_task(t1)
-    p.add_task(t2)
+    project.add_task(task1)
+    project.add_task(task2)
  
 <br>
 
 ## Monte Carlo Simulation
 
-Monaco can estimate the duration of a project through Monte Carlo Simulation 
-of many project cycles. The central limit theorem guarantees that the sum of 
-many independent random processes approaches a normal distribution.   
+Monaco can estimate the duration of a project by simulating many project cycles 
+using Monte Carlo Simulation. The [central limit theorem](https://en.wikipedia.org/wiki/Central_limit_theorem) establishes that the 
+sum of many independent random variables approximate a normal distribution.   
 
 <br>
 
 **Monte Carlo Simulation** can be done with a single line of code:
 
-    plot_data = p.plot(n=10000)
+    plot = p.plot(n=10000)
+    plot.show()
 
 <div align="center"> <img src="example/monte_carlo_estimation.png" alt="Project" height="478" width="593" align="center"/> </div>
 <br>
@@ -68,6 +68,9 @@ many independent random processes approaches a normal distribution.
 The **likelihood of completing a project** can be read from the 
 cumulative distribution. In this example there is an 80% chance that the 
 project will be completed under 23 days.
+
+    plot = p.plot(n=10000, hist=False)
+    plot.show()
 
 <div align="center"> <img src="example/monte_carlo_cumulative.png" alt="Project" height="478" width="593" align="center"/> </div>
 
