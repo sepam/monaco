@@ -22,7 +22,7 @@ better task estimations by modeling tasks as **random processes**.
 
 Defining a **Task** is easy:
 
-    task = Task(name='Task', min=3, mode=4, max=9, estimator='triangular')
+    task = Task(name='Task', min_duration=3, mode_duration=4, max_duration=9, estimator='triangular')
 
 <br>
 
@@ -40,9 +40,9 @@ Defining a **Task** is easy:
     project = Project(name='Build Machine Learning App')
 
     # define tasks and duration (in this case: number of days)
-    task1 = Task(name='Train model', min=1, max=5, estimator='uniform')
-    task2 = Task(name='Deploy Application', min=1, mode=2, max=3, estimator='uniform')
-    
+    task1 = Task(name='Train model', min_duration=1, max_duration=5, estimator='uniform')
+    task2 = Task(name='Deploy Application', min_duration=1, mode_duration=2, max_duration=3, estimator='triangular')
+
     # define task sequence
     project.add_task(task1)
     project.add_task(task2)
@@ -59,18 +59,16 @@ sum of many independent random variables approximate a normal distribution.
 
 **Monte Carlo Simulation** can be done with a single line of code:
 
-    plot = p.plot(n=10000)
-    plot.show()
+    fig = project.plot(n=10000)
 
 <div align="center"> <img src="example/monte_carlo_estimation.png" alt="Project" height="478" width="593" align="center"/> </div>
 <br>
 
-The **likelihood of completing a project** can be read from the 
-cumulative distribution. In this example there is an 80% chance that the 
+The **likelihood of completing a project** can be read from the
+cumulative distribution. In this example there is an 80% chance that the
 project will be completed under 23 days.
 
-    plot = p.plot(n=10000, hist=False)
-    plot.show()
+    fig = project.plot(n=10000, hist=False)
 
 <div align="center"> <img src="example/monte_carlo_cumulative.png" alt="Project" height="478" width="593" align="center"/> </div>
 
