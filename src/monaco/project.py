@@ -59,8 +59,8 @@ class Project(Task):
         c = Counter(sims)
         return c
 
-    def plot(self, n=1000, hist=True, kde=False):
-        """ Plot the resulting histogram
+    def plot(self, n=1000, hist=True, kde=False, save_path=None):
+        """ Plot the resulting histogram or cumulative distribution
 
         Parameters
         ----------
@@ -70,35 +70,41 @@ class Project(Task):
             Whether to plot a histogram or cumulative distribution plot
         kde : bool
             Whether to plot the kernel density estimation on the histogram
+        save_path : str, optional
+            Path to save the plot. If None, the plot will be displayed instead
 
         Returns
         -------
-        plot : matplotlib.plt() object
-            Plot object
+        fig : matplotlib.figure.Figure
+            Figure object containing the plot
 
         """
-        sns.set(rc={"xtick.bottom": True, "ytick.left": True})
+        sns.set_theme(rc={"xtick.bottom": True, "ytick.left": True})
         sims = [self.estimate() for i in range(n)]
         fig, ax = plt.subplots(figsize=(10, 8))
 
         if hist:
-            kwargs = {'cumulative': False, 'edgecolor': "k", 'linewidth': 1}
-            plot = sns.distplot(sims, bins=math.floor(max(sims)), hist=True,
-                                kde=kde,norm_hist=False, hist_kws=kwargs,
-                                ax=ax)
-            plt.title('Histogram - days to project completion '
-                      '- n = {}'.format(n))
-            plt.axvline(x=np.median(sims), color='red', label='50%')
-            plt.text(np.median(sims)-0.5, -2, '50%', color='red')
-            plt.show()
+            # Use modern histplot instead of deprecated distplot
+            sns.histplot(sims, bins=math.floor(max(sims)),
+                        stat='count', kde=kde, edgecolor='k',
+                        linewidth=1, ax=ax)
+            ax.set_title('Histogram - days to project completion '
+                        '- n = {}'.format(n))
+            ax.axvline(x=np.median(sims), color='red', label='50%')
+            ax.text(np.median(sims)-0.5, ax.get_ylim()[0], '50%', color='red')
+            ax.legend()
 
         else:
-            kwargs = {'cumulative': True, 'edgecolor': "k", 'linewidth': 1}
-            plot = sns.distplot(sims, bins=math.floor(max(sims)),
-                                hist=True, kde=False, norm_hist=True,
-                                hist_kws=kwargs)
-            plt.title('Cumulative histogram - days project to completion '
-                      '- n = {}'.format(n))
+            # Use modern histplot with cumulative option
+            sns.histplot(sims, bins=math.floor(max(sims)),
+                        stat='probability', cumulative=True,
+                        edgecolor='k', linewidth=1, ax=ax)
+            ax.set_title('Cumulative histogram - days project to completion '
+                        '- n = {}'.format(n))
+
+        if save_path:
+            plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        else:
             plt.show()
 
-        return plot
+        return fig
