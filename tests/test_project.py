@@ -40,8 +40,8 @@ def test_project_add_two_task():
 
 
 def test_project_estimate():
-    t1 = Task(name='Analysis', min=2, mode=3, max=7)
-    t2 = Task(name='Experiment', min=30, mode=35, max=40)
+    t1 = Task(name='Analysis', min_duration=2, mode_duration=3, max_duration=7)
+    t2 = Task(name='Experiment', min_duration=30, mode_duration=35, max_duration=40)
     p = Project(name='High Score Bypass')
     p.add_task(t1)
     p.add_task(t2)
@@ -52,8 +52,8 @@ def test_project_estimate():
 
 
 def test_project_simulate(n=1000):
-    t1 = Task(name='Analysis', min=2, mode=3, max=7)
-    t2 = Task(name='Experiment', min=30, mode=35, max=40)
+    t1 = Task(name='Analysis', min_duration=2, mode_duration=3, max_duration=7)
+    t2 = Task(name='Experiment', min_duration=30, mode_duration=35, max_duration=40)
     p = Project(name='High Score Bypass')
     p.add_task(t1)
     p.add_task(t2)
@@ -61,29 +61,57 @@ def test_project_simulate(n=1000):
     assert type(sim_runs) == Counter
 
 
-@pytest.mark.skip
-def test_plot_hist(n=1000):
-    t1 = Task(name='Analysis', min=2, mode=3, max=7, estimator='triangular')
-    t2 = Task(name='Experiment', min=30, mode=35, max=40, estimator='triangular')
-    t3 = Task(name='Evaluation', min=30, mode=35, max=40, estimator='triangular')
-    t4 = Task(name='Monitoring', min=30, mode=35, max=40, estimator='triangular')
+def test_plot_hist(n=100):
+    """Test histogram plot with save to file"""
+    import tempfile
+    import os
+
+    t1 = Task(name='Analysis', min_duration=2, mode_duration=3, max_duration=7, estimator='triangular')
+    t2 = Task(name='Experiment', min_duration=30, mode_duration=35, max_duration=40, estimator='triangular')
+    t3 = Task(name='Evaluation', min_duration=30, mode_duration=35, max_duration=40, estimator='triangular')
+    t4 = Task(name='Monitoring', min_duration=30, mode_duration=35, max_duration=40, estimator='triangular')
     p = Project(name='High Score Bypass')
     p.add_task(t1)
     p.add_task(t2)
     p.add_task(t3)
     p.add_task(t4)
-    p.plot(n=n)
+
+    # Save to temp file to avoid showing plot in tests
+    with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
+        tmp_path = tmp.name
+
+    try:
+        fig = p.plot(n=n, save_path=tmp_path)
+        assert os.path.exists(tmp_path)
+        assert fig is not None
+    finally:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
 
 
-@pytest.mark.skip
-def test_plot_cumul(n=1000):
-    t1 = Task(name='Analysis', min=2, mode=3, max=7, estimator='triangular')
-    t2 = Task(name='Experiment', min=30, mode=35, max=40, estimator='triangular')
-    t3 = Task(name='Evaluation', min=30, mode=35, max=40, estimator='triangular')
-    t4 = Task(name='Monitoring', min=30, mode=35, max=40, estimator='triangular')
+def test_plot_cumul(n=100):
+    """Test cumulative distribution plot with save to file"""
+    import tempfile
+    import os
+
+    t1 = Task(name='Analysis', min_duration=2, mode_duration=3, max_duration=7, estimator='triangular')
+    t2 = Task(name='Experiment', min_duration=30, mode_duration=35, max_duration=40, estimator='triangular')
+    t3 = Task(name='Evaluation', min_duration=30, mode_duration=35, max_duration=40, estimator='triangular')
+    t4 = Task(name='Monitoring', min_duration=30, mode_duration=35, max_duration=40, estimator='triangular')
     p = Project(name='High Score Bypass')
     p.add_task(t1)
     p.add_task(t2)
     p.add_task(t3)
     p.add_task(t4)
-    p.plot(hist=False, n=n)
+
+    # Save to temp file to avoid showing plot in tests
+    with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
+        tmp_path = tmp.name
+
+    try:
+        fig = p.plot(hist=False, n=n, save_path=tmp_path)
+        assert os.path.exists(tmp_path)
+        assert fig is not None
+    finally:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
