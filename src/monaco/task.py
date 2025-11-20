@@ -1,12 +1,19 @@
 """Logic for creating Tasks"""
 from datetime import datetime
 import random
+from typing import Optional
 
 
 class Task:
 
-    def __init__(self, name=None, min_duration=None, mode_duration=None,
-                 max_duration=None, estimator='triangular'):
+    def __init__(
+        self,
+        name: Optional[str] = None,
+        min_duration: Optional[float] = None,
+        mode_duration: Optional[float] = None,
+        max_duration: Optional[float] = None,
+        estimator: str = 'triangular'
+    ) -> None:
         """ Task class.
 
         Parameters
@@ -67,7 +74,7 @@ class Task:
                         f"Got min={min_duration}, max={max_duration}"
                     )
 
-    def estimate(self):
+    def estimate(self) -> float:
         """Estimate duration of a task following a probability
         distribution.
 
@@ -75,12 +82,24 @@ class Task:
         -------
         float
             An estimated duration sampled from the specified probability distribution
+
+        Raises
+        ------
+        ValueError
+            If required duration parameters are None
         """
         if self.estimator == 'triangular':
+            if self.min_duration is None or self.mode_duration is None or self.max_duration is None:
+                raise ValueError("min_duration, mode_duration, and max_duration must be set for triangular estimator")
             est = random.triangular(low=self.min_duration, mode=self.mode_duration,
                                     high=self.max_duration)
 
         elif self.estimator == 'uniform':
+            if self.min_duration is None or self.max_duration is None:
+                raise ValueError("min_duration and max_duration must be set for uniform estimator")
             est = random.uniform(self.min_duration, self.max_duration)
+
+        else:
+            raise ValueError(f"Unknown estimator: {self.estimator}")
 
         return est

@@ -25,6 +25,7 @@ setup(
         'dev': [
             'pytest>=6.0',
             'pytest-cov>=2.10',
+            'mypy>=0.900',
         ]
     },
     entry_points={

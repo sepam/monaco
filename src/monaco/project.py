@@ -1,6 +1,8 @@
 import math
 from collections import Counter
+from typing import List, Optional
 import matplotlib.pyplot as plt
+import matplotlib.figure
 import numpy as np
 import seaborn as sns
 from monaco import Task
@@ -8,7 +10,7 @@ from monaco import Task
 
 class Project(Task):
 
-    def __init__(self, name=None):
+    def __init__(self, name: Optional[str] = None) -> None:
         """ Project class
 
         Parameters
@@ -19,9 +21,9 @@ class Project(Task):
         """
         super().__init__()
         self.name = name
-        self.tasks = []
+        self.tasks: List[Task] = []
 
-    def add_task(self, task):
+    def add_task(self, task: Task) -> None:
         """ Add a task to the project.
 
         Parameters
@@ -31,7 +33,7 @@ class Project(Task):
         """
         self.tasks.append(task)
 
-    def estimate(self):
+    def estimate(self) -> float:
         """ Estimate the duration of a project given uncertainty estimates.
 
         Returns
@@ -42,7 +44,7 @@ class Project(Task):
         self.p_est = sum([t.estimate() for t in self.tasks])
         return self.p_est
 
-    def _simulate(self, n=1000):
+    def _simulate(self, n: int = 1000) -> Counter:
         """ Run a monte carlo simulation by simulating n estimation runs.
 
         Parameters
@@ -59,7 +61,13 @@ class Project(Task):
         c = Counter(sims)
         return c
 
-    def plot(self, n=1000, hist=True, kde=False, save_path=None):
+    def plot(
+        self,
+        n: int = 1000,
+        hist: bool = True,
+        kde: bool = False,
+        save_path: Optional[str] = None
+    ) -> matplotlib.figure.Figure:
         """ Plot the resulting histogram or cumulative distribution
 
         Parameters
