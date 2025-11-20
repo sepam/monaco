@@ -23,27 +23,208 @@ class Project(Task):
         """
         super().__init__()
         self.name = name
-        self.tasks: List[Task] = []
+        self._tasks_dict: Dict[str, Task] = {}
+        self.dependencies: Dict[str, List[str]] = {}
+        self._task_order: List[str] = []  # Preserve insertion order for backward compat
 
-    def add_task(self, task: Task) -> None:
+    @property
+    def tasks(self) -> List[Task]:
+        """Get tasks as a list (for backward compatibility)."""
+        return [self._tasks_dict[tid] for tid in self._task_order]
+
+    def add_task(self, task: Task, depends_on: Optional[List[Task]] = None) -> None:
         """ Add a task to the project.
 
         Parameters
         ----------
         task : Task Object
             A subtask instantiated with monaco.Task()
+        depends_on : List[Task], optional
+            List of tasks that must complete before this task can start.
+            For sequential/linear projects, leave as None (default behavior).
+
+        Raises
+        ------
+        ValueError
+            If a dependency task hasn't been added to the project yet
+            If adding this task creates a circular dependency
+
+        Examples
+        --------
+        >>> # Simple linear project (backward compatible)
+        >>> project.add_task(task1)
+        >>> project.add_task(task2)
+        >>>
+        >>> # Project with dependencies
+        >>> project.add_task(research)
+        >>> project.add_task(backend, depends_on=[research])
+        >>> project.add_task(frontend, depends_on=[research])
+        >>> project.add_task(testing, depends_on=[backend, frontend])
         """
-        self.tasks.append(task)
+        # Add task to internal dict
+        self._tasks_dict[task.task_id] = task
+        self._task_order.append(task.task_id)
+
+        # Add dependencies if specified
+        if depends_on:
+            # Validate all dependencies exist in project
+            for dep_task in depends_on:
+                if dep_task.task_id not in self._tasks_dict:
+                    raise ValueError(
+                        f"Dependency task '{dep_task.name}' (id: {dep_task.task_id}) "
+                        f"must be added to the project before being used as a dependency"
+                    )
+
+            self.dependencies[task.task_id] = [t.task_id for t in depends_on]
+
+            # Validate no cycles created
+            self._validate_dag()
+        else:
+            # No dependencies - can use default if not already set
+            if task.task_id not in self.dependencies:
+                self.dependencies[task.task_id] = []
+
+    def _validate_dag(self) -> None:
+        """
+        Validate that the task graph is a valid DAG (no cycles).
+
+        Raises
+        ------
+        ValueError
+            If a cycle is detected in the dependency graph
+        """
+        visited = set()
+        rec_stack = set()
+
+        def has_cycle(task_id: str) -> bool:
+            visited.add(task_id)
+            rec_stack.add(task_id)
+
+            # Check all dependencies
+            for dep_id in self.dependencies.get(task_id, []):
+                if dep_id not in visited:
+                    if has_cycle(dep_id):
+                        return True
+                elif dep_id in rec_stack:
+                    return True
+
+            rec_stack.remove(task_id)
+            return False
+
+        # Check all tasks for cycles
+        for task_id in self._tasks_dict:
+            if task_id not in visited:
+                if has_cycle(task_id):
+                    raise ValueError(
+                        "Circular dependency detected in project. "
+                        "Task dependencies must form a DAG (Directed Acyclic Graph)."
+                    )
+
+    def _topological_sort(self) -> List[str]:
+        """
+        Perform topological sort on the task graph.
+
+        Returns
+        -------
+        List[str]
+            List of task IDs in topological order (dependencies before dependents)
+        """
+        # in_degree counts how many dependencies each task has (incoming edges)
+        in_degree = {task_id: len(self.dependencies.get(task_id, []))
+                     for task_id in self._tasks_dict}
+
+        # Queue of tasks with no dependencies (can start immediately)
+        queue = [task_id for task_id, degree in in_degree.items() if degree == 0]
+        result = []
+
+        while queue:
+            # Process task with no dependencies
+            current = queue.pop(0)
+            result.append(current)
+
+            # For each task that depends on current
+            for task_id in self._tasks_dict:
+                if current in self.dependencies.get(task_id, []):
+                    in_degree[task_id] -= 1
+                    if in_degree[task_id] == 0:
+                        queue.append(task_id)
+
+        return result
+
+    def _calculate_critical_path(self, task_durations: Dict[str, float]) -> float:
+        """
+        Calculate project duration using critical path method.
+
+        For projects with dependencies, calculates the longest path through the graph.
+        Tasks in parallel take max() time, sequential tasks sum.
+
+        Parameters
+        ----------
+        task_durations : Dict[str, float]
+            Mapping of task_id to duration for this simulation run
+
+        Returns
+        -------
+        float
+            Total project duration considering dependencies
+        """
+        if not self._tasks_dict:
+            return 0.0
+
+        # Get tasks in topological order
+        sorted_tasks = self._topological_sort()
+
+        # Calculate earliest start time for each task
+        earliest_start: Dict[str, float] = {}
+
+        for task_id in sorted_tasks:
+            deps = self.dependencies.get(task_id, [])
+            if not deps:
+                # No dependencies - can start immediately
+                earliest_start[task_id] = 0.0
+            else:
+                # Start after all dependencies complete
+                dep_completion_times = [
+                    earliest_start[dep_id] + task_durations[dep_id]
+                    for dep_id in deps
+                ]
+                earliest_start[task_id] = max(dep_completion_times)
+
+        # Total duration = latest completion time
+        completion_times = [
+            earliest_start[tid] + task_durations[tid]
+            for tid in sorted_tasks
+        ]
+        return max(completion_times) if completion_times else 0.0
+
+    def _has_dependencies(self) -> bool:
+        """Check if any tasks have dependencies (non-empty dependency lists)."""
+        return any(deps for deps in self.dependencies.values())
 
     def estimate(self) -> float:
         """ Estimate the duration of a project given uncertainty estimates.
 
+        For projects with task dependencies, calculates the critical path.
+        For simple linear projects (no dependencies), sums all task durations (backward compatible).
+
         Returns
         -------
         p_est : float
-            An estimated duration in measured in units
+            An estimated duration measured in units
         """
-        self.p_est = sum([t.estimate() for t in self.tasks])
+        # Sample duration for each task
+        task_durations = {
+            task_id: task.estimate()
+            for task_id, task in self._tasks_dict.items()
+        }
+
+        # Use critical path if dependencies exist, otherwise simple sum
+        if self._has_dependencies():
+            self.p_est = self._calculate_critical_path(task_durations)
+        else:
+            # Backward compatible: simple sum for linear projects
+            self.p_est = sum(task_durations.values())
+
         return self.p_est
 
     def _simulate(self, n: int = 1000) -> Counter:
