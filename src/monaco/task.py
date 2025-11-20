@@ -1,6 +1,7 @@
 """Logic for creating Tasks"""
 from datetime import datetime
 import random
+import uuid
 from typing import Optional
 
 
@@ -35,6 +36,7 @@ class Task:
             If estimator is not 'triangular' or 'uniform'
             If duration values are invalid (negative or not ordered correctly)
         """
+        self.task_id = str(uuid.uuid4())
         self.cdate = datetime.now()
         self.name = name
         self.mode_duration = mode_duration
