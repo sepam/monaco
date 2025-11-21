@@ -1,7 +1,7 @@
 from monaco import Task, Project
 from pprint import pprint
 
-project = Project(name="App development")
+project = Project(name="App development", unit='days')
 
 task1 = Task(name="Design UI", min_duration=1, max_duration=3, estimator='uniform')
 task2 = Task(name="Develop app", min_duration=7, max_duration=14, estimator='uniform')
