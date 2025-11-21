@@ -12,17 +12,21 @@ from monaco import Task
 
 class Project(Task):
 
-    def __init__(self, name: Optional[str] = None) -> None:
+    def __init__(self, name: Optional[str] = None, unit: str = 'days') -> None:
         """ Project class
 
         Parameters
         ----------
         name : str, optional
             Name of the project
+        unit : str, optional
+            Time unit for all task durations (default: 'days').
+            Common values: 'days', 'weeks', 'hours', 'months'
 
         """
         super().__init__()
         self.name = name
+        self.unit = unit
         self._tasks_dict: Dict[str, Task] = {}
         self.dependencies: Dict[str, List[str]] = {}
         self._task_order: List[str] = []  # Preserve insertion order for backward compat
@@ -271,6 +275,7 @@ class Project(Task):
         -------
         Dict[str, Any]
             Dictionary containing:
+            - unit: Time unit for all durations
             - n_simulations: Number of simulations run
             - mean: Average completion time
             - median: Median completion time (P50)
@@ -282,10 +287,10 @@ class Project(Task):
 
         Examples
         --------
-        >>> project = Project(name='My Project')
+        >>> project = Project(name='My Project', unit='weeks')
         >>> project.add_task(Task(min_duration=1, mode_duration=2, max_duration=3))
         >>> stats = project.statistics(n=10000)
-        >>> print(f"P85: {stats['percentiles']['p85']:.1f} days")
+        >>> print(f"P85: {stats['percentiles']['p85']:.1f} {stats['unit']}")
         """
         sims = self._run_simulation(n)
         sims_array = np.array(sims)
@@ -304,6 +309,7 @@ class Project(Task):
         ci_95_upper = mean + 1.96 * std
 
         return {
+            'unit': self.unit,
             'n_simulations': n,
             'mean': float(mean),
             'median': float(p50),
@@ -359,6 +365,7 @@ class Project(Task):
             # Export comprehensive JSON with stats and raw data
             output_data = {
                 'project_name': self.name,
+                'unit': self.unit,
                 'statistics': stats,
                 'simulations': sims
             }
@@ -371,6 +378,7 @@ class Project(Task):
                 writer = csv.writer(f)
                 # Write header
                 writer.writerow(['Project Name', self.name])
+                writer.writerow(['Unit', self.unit])
                 writer.writerow(['Number of Simulations', stats['n_simulations']])
                 writer.writerow(['Mean', stats['mean']])
                 writer.writerow(['Median (P50)', stats['median']])
@@ -436,8 +444,10 @@ class Project(Task):
             sns.histplot(sims, bins=math.floor(max(sims)),
                         stat='count', kde=kde, edgecolor='k',
                         linewidth=1, ax=ax)
-            ax.set_title('Histogram - days to project completion '
-                        '- n = {}'.format(n))
+            ax.set_title(f'Histogram - {self.unit} to project completion '
+                        f'- n = {n}')
+            ax.set_xlabel(f'Duration ({self.unit})')
+            ax.set_ylabel('Count')
 
             # Add percentile markers
             if show_percentiles:
@@ -461,8 +471,10 @@ class Project(Task):
             sns.histplot(sims, bins=math.floor(max(sims)),
                         stat='probability', cumulative=True,
                         edgecolor='k', linewidth=1, ax=ax)
-            ax.set_title('Cumulative histogram - days project to completion '
-                        '- n = {}'.format(n))
+            ax.set_title(f'Cumulative histogram - {self.unit} to project completion '
+                        f'- n = {n}')
+            ax.set_xlabel(f'Duration ({self.unit})')
+            ax.set_ylabel('Cumulative Probability')
 
         if save_path:
             plt.savefig(save_path, dpi=300, bbox_inches='tight')
