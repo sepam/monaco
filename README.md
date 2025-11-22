@@ -34,18 +34,24 @@ Defining a **Task** is easy:
 
 <br>
 
-**Tasks** can be added to **Projects**:
+**Tasks** can be added to **Projects** with dependencies:
 
     # initiate a project
-    project = Project(name='Build Machine Learning App')
+    project = Project(name='Web App Development', unit='days')
 
-    # define tasks and duration (in this case: number of days)
-    task1 = Task(name='Train model', min_duration=1, max_duration=5, estimator='uniform')
-    task2 = Task(name='Deploy Application', min_duration=1, mode_duration=2, max_duration=3, estimator='triangular')
+    # define tasks with duration estimates
+    design_ui = Task(name='Design UI', min_duration=2, mode_duration=3, max_duration=5, estimator='triangular')
+    develop_frontend = Task(name='Develop Frontend', min_duration=5, mode_duration=7, max_duration=10, estimator='triangular')
+    develop_backend = Task(name='Develop Backend', min_duration=4, mode_duration=6, max_duration=9, estimator='triangular')
+    testing = Task(name='Testing', min_duration=2, mode_duration=3, max_duration=5, estimator='triangular')
+    deploy = Task(name='Deploy', min_duration=1, max_duration=2, estimator='uniform')
 
-    # define task sequence
-    project.add_task(task1)
-    project.add_task(task2)
+    # add tasks with dependencies (supports parallel and sequential execution)
+    project.add_task(design_ui)
+    project.add_task(develop_frontend, depends_on=[design_ui])  # frontend needs UI design first
+    project.add_task(develop_backend)  # backend can run in parallel
+    project.add_task(testing, depends_on=[develop_frontend, develop_backend])  # testing waits for both
+    project.add_task(deploy, depends_on=[testing])
  
 <br>
 
@@ -65,8 +71,7 @@ sum of many independent random variables approximate a normal distribution.
 <br>
 
 The **likelihood of completing a project** can be read from the
-cumulative distribution. In this example there is an 80% chance that the
-project will be completed under 23 days.
+cumulative distribution, accounting for both parallel and sequential task execution.
 
     fig = project.plot(n=10000, hist=False)
 
