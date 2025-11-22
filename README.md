@@ -1,79 +1,170 @@
-![](https://img.shields.io/github/license/sepam/monaco?style=flat-square)
+<div align="center">
+  <img src="monaco.png" alt="Monaco" width="200"/>
 
-<h1 align="left">
-monaco
-<img src="roulette.jpg" alt="monaco" height="120" width="120" align="right"/>
-</h1>
+  # Monaco
 
-<br>
-<br>
-<br>
-<br>
+  **Probabilistic Project Planning with Monte Carlo Simulation**
 
+  [![License](https://img.shields.io/github/license/sepam/monaco?style=flat-square)](LICENSE)
+  [![Python](https://img.shields.io/badge/python-3.7+-blue.svg?style=flat-square)](https://www.python.org)
 
-Estimating the time it takes to complete a task or project is one the 
-biggest challenges in task and project planning. Monaco helps you make 
-better task estimations by modeling tasks as **random processes**.
+  <p align="center">
+    <a href="#features">Features</a> •
+    <a href="#installation">Installation</a> •
+    <a href="#quick-start">Quick Start</a> •
+    <a href="#monte-carlo-simulation">Monte Carlo</a>
+  </p>
+</div>
 
-<h1 align="center">
-<img src="example/task_definition.png" alt="Task" height="395" width="698" align="center"/>
-</h1>
-<br>
+---
 
-Defining a **Task** is easy:
+## Why Monaco?
 
-    task = Task(name='Task', min_duration=3, mode_duration=4, max_duration=9, estimator='triangular')
+Estimating the time it takes to complete a task or project is one of the biggest challenges in project planning. Traditional approaches use fixed estimates, but reality is uncertain.
 
-<br>
+**Monaco helps you make better estimates by modeling tasks as random processes**, accounting for uncertainty and task dependencies through Monte Carlo simulation.
 
-**Projects** are sequences of tasks:
+## Features
 
-<h1 align="center">
-<img src="example/project_estimation.png" alt="Project" height="130" width="1121" align="center"/>
-</h1>
+- **Probabilistic Task Modeling** - Define tasks with min/max/mode duration ranges
+- **Task Dependencies** - Support for parallel and sequential task execution
+- **Monte Carlo Simulation** - Run thousands of simulations to estimate project completion
+- **Statistical Analysis** - Get percentiles, confidence intervals, and key metrics
+- **Visualization** - Generate histogram and cumulative distribution plots
+- **Export Results** - Save results to JSON or CSV for further analysis
 
-<br>
+---
 
-**Tasks** can be added to **Projects** with dependencies:
+## Installation
 
-    # initiate a project
-    project = Project(name='Web App Development', unit='days')
+```bash
+pip install monaco
+```
 
-    # define tasks with duration estimates
-    design_ui = Task(name='Design UI', min_duration=2, mode_duration=3, max_duration=5, estimator='triangular')
-    develop_frontend = Task(name='Develop Frontend', min_duration=5, mode_duration=7, max_duration=10, estimator='triangular')
-    develop_backend = Task(name='Develop Backend', min_duration=4, mode_duration=6, max_duration=9, estimator='triangular')
-    testing = Task(name='Testing', min_duration=2, mode_duration=3, max_duration=5, estimator='triangular')
-    deploy = Task(name='Deploy', min_duration=1, max_duration=2, estimator='uniform')
+---
 
-    # add tasks with dependencies (supports parallel and sequential execution)
-    project.add_task(design_ui)
-    project.add_task(develop_frontend, depends_on=[design_ui])  # frontend needs UI design first
-    project.add_task(develop_backend)  # backend can run in parallel
-    project.add_task(testing, depends_on=[develop_frontend, develop_backend])  # testing waits for both
-    project.add_task(deploy, depends_on=[testing])
- 
-<br>
+## Quick Start
+
+### Define Tasks with Uncertainty
+
+Instead of saying "this task takes 5 days", Monaco lets you model uncertainty:
+
+```python
+from monaco import Task
+
+task = Task(
+    name='Develop Feature',
+    min_duration=3,
+    mode_duration=5,  # most likely
+    max_duration=9,
+    estimator='triangular'
+)
+```
+
+<div align="center">
+  <img src="example/task_definition.png" alt="Task Definition" width="600"/>
+</div>
+
+### Build Projects with Dependencies
+
+Create complex project workflows with parallel and sequential task execution:
+
+```python
+from monaco import Task, Project
+
+# Create project
+project = Project(name='Web App Development', unit='days')
+
+# Define tasks
+design_ui = Task(name='Design UI', min_duration=2, mode_duration=3, max_duration=5, estimator='triangular')
+develop_frontend = Task(name='Develop Frontend', min_duration=5, mode_duration=7, max_duration=10, estimator='triangular')
+develop_backend = Task(name='Develop Backend', min_duration=4, mode_duration=6, max_duration=9, estimator='triangular')
+testing = Task(name='Testing', min_duration=2, mode_duration=3, max_duration=5, estimator='triangular')
+deploy = Task(name='Deploy', min_duration=1, max_duration=2, estimator='uniform')
+
+# Add tasks with dependencies
+project.add_task(design_ui)
+project.add_task(develop_frontend, depends_on=[design_ui])           # Sequential: frontend needs UI design
+project.add_task(develop_backend)                                    # Parallel: backend runs independently
+project.add_task(testing, depends_on=[develop_frontend, develop_backend])  # Waits for both tracks
+project.add_task(deploy, depends_on=[testing])
+```
+
+<div align="center">
+  <img src="example/project_estimation.png" alt="Project Estimation" width="700"/>
+</div>
+
+---
 
 ## Monte Carlo Simulation
 
-Monaco can estimate the duration of a project by simulating many project cycles 
-using Monte Carlo Simulation. The [central limit theorem](https://en.wikipedia.org/wiki/Central_limit_theorem) establishes that the 
-sum of many independent random variables approximate a normal distribution.   
+Monaco uses [Monte Carlo simulation](https://en.wikipedia.org/wiki/Monte_Carlo_method) to estimate project completion time. By running thousands of simulations, it leverages the [Central Limit Theorem](https://en.wikipedia.org/wiki/Central_limit_theorem) to provide probabilistic estimates.
 
-<br>
+### Run Simulation & Get Statistics
 
-**Monte Carlo Simulation** can be done with a single line of code:
+```python
+# Get comprehensive statistics
+stats = project.statistics(n=10000)
 
-    fig = project.plot(n=10000)
+print(f"Median completion time: {stats['median']:.1f} days")
+print(f"90% confidence: {stats['percentiles']['p90']:.1f} days")
+print(f"95% confidence: {stats['percentiles']['p95']:.1f} days")
+```
 
-<div align="center"> <img src="example/monte_carlo_estimation.png" alt="Project" height="478" width="593" align="center"/> </div>
-<br>
+### Visualize Results
 
-The **likelihood of completing a project** can be read from the
-cumulative distribution, accounting for both parallel and sequential task execution.
+```python
+# Generate histogram
+project.plot(n=10000, hist=True)
+```
 
-    fig = project.plot(n=10000, hist=False)
+<div align="center">
+  <img src="example/monte_carlo_estimation.png" alt="Monte Carlo Histogram" width="550"/>
+</div>
 
-<div align="center"> <img src="example/monte_carlo_cumulative.png" alt="Project" height="478" width="593" align="center"/> </div>
+### Cumulative Distribution
 
+Read the likelihood of completing your project by a given date:
+
+```python
+# Generate cumulative distribution
+project.plot(n=10000, hist=False)
+```
+
+<div align="center">
+  <img src="example/monte_carlo_cumulative.png" alt="Cumulative Distribution" width="550"/>
+</div>
+
+The cumulative distribution shows the probability of completing the project within a given timeframe, accounting for both parallel and sequential task execution.
+
+---
+
+## Advanced Features
+
+### Export Results
+
+```python
+# Export to JSON
+project.export_results(n=10000, format='json', filename='results.json')
+
+# Export to CSV
+project.export_results(n=10000, format='csv', filename='results.csv')
+```
+
+### Custom Estimators
+
+Monaco supports two probability distributions:
+- **Triangular**: Best when you have a most-likely estimate (min, mode, max)
+- **Uniform**: When all durations in the range are equally likely (min, max)
+
+---
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+<div align="center">
+  <sub>Built with Monte Carlo simulation for better project planning</sub>
+</div>
