@@ -20,7 +20,7 @@
 
 ## Why Monaco?
 
-Estimating the time it takes to complete a task or project is one of the biggest challenges in project planning. Traditional approaches use fixed estimates, but reality is uncertain.
+Estimating the time it takes to complete a task or project is hard. Traditional approaches use fixed estimates, but this ignores any uncertainty and life often gets in the way.
 
 **Monaco helps you make better estimates by modeling tasks as random processes**, accounting for uncertainty and task dependencies through Monte Carlo simulation.
 
@@ -54,10 +54,10 @@ from monaco import Task
 
 task = Task(
     name='Develop Feature',
-    min_duration=3,
-    mode_duration=5,  # most likely
-    max_duration=9,
-    estimator='triangular'
+    min_duration=3,  
+    mode_duration=5,  # most likely estimate
+    max_duration=9,  
+    estimator='triangular'  
 )
 ```
 
@@ -72,7 +72,7 @@ Create complex project workflows with parallel and sequential task execution:
 ```python
 from monaco import Task, Project
 
-# Create project
+# Create a project
 project = Project(name='Web App Development', unit='days')
 
 # Define tasks
@@ -98,12 +98,12 @@ project.add_task(deploy, depends_on=[testing])
 
 ## Monte Carlo Simulation
 
-Monaco uses [Monte Carlo simulation](https://en.wikipedia.org/wiki/Monte_Carlo_method) to estimate project completion time. By running thousands of simulations, it leverages the [Central Limit Theorem](https://en.wikipedia.org/wiki/Central_limit_theorem) to provide probabilistic estimates.
+Monaco uses [Monte Carlo simulation](https://en.wikipedia.org/wiki/Monte_Carlo_method) to estimate project completion time. By running thousands of simulations, it leverages the [Central Limit Theorem](https://en.wikipedia.org/wiki/Central_limit_theorem) to provide probabilistic estimates for the completion of tasks and projects.
 
 ### Run Simulation & Get Statistics
 
 ```python
-# Get comprehensive statistics
+# Get comprehensive statistics of the simulation
 stats = project.statistics(n=10000)
 
 print(f"Median completion time: {stats['median']:.1f} days")
