@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import matplotlib.figure
 import numpy as np
 import seaborn as sns
+import networkx as nx
 from monaco import Task
 
 
@@ -475,6 +476,120 @@ class Project(Task):
                         f'- n = {n}')
             ax.set_xlabel(f'Duration ({self.unit})')
             ax.set_ylabel('Cumulative Probability')
+
+        if save_path:
+            plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        else:
+            plt.show()
+
+        return fig
+
+    def plot_dependency_graph(
+        self,
+        save_path: Optional[str] = None,
+        figsize: Tuple[int, int] = (12, 8),
+        node_size: int = 3000,
+        font_size: int = 9,
+        show_durations: bool = True
+    ) -> matplotlib.figure.Figure:
+        """Plot the task dependency graph using networkx.
+
+        Parameters
+        ----------
+        save_path : str, optional
+            Path to save the plot. If None, displays interactively
+        figsize : Tuple[int, int]
+            Figure size in inches (width, height)
+        node_size : int
+            Size of task nodes
+        font_size : int
+            Font size for labels
+        show_durations : bool
+            Whether to show duration ranges on nodes
+
+        Returns
+        -------
+        matplotlib.figure.Figure
+            The generated figure
+
+        Examples
+        --------
+        >>> project.plot_dependency_graph(save_path='dependency_graph.png')
+        """
+        # Create directed graph
+        G = nx.DiGraph()
+
+        # Add nodes with task information
+        for task_id, task in self._tasks_dict.items():
+            label = task.name or task_id[:8]
+            if show_durations:
+                if task.estimator == 'triangular':
+                    duration_info = f"\n({task.min_duration}-{task.mode_duration}-{task.max_duration})"
+                else:
+                    duration_info = f"\n({task.min_duration}-{task.max_duration})"
+                label += duration_info
+            G.add_node(task_id, label=label)
+
+        # Add edges (dependencies)
+        for task_id, deps in self.dependencies.items():
+            for dep_id in deps:
+                G.add_edge(dep_id, task_id)  # Edge from dependency to dependent
+
+        # Create figure
+        fig, ax = plt.subplots(figsize=figsize)
+
+        # Use hierarchical layout for DAG
+        try:
+            # Try to use graphviz layout if available
+            pos = nx.nx_agraph.graphviz_layout(G, prog='dot')
+        except Exception:
+            # Fallback layouts
+            try:
+                # Try shell layout for better DAG visualization
+                pos = nx.shell_layout(G)
+            except Exception:
+                # Final fallback to spring layout
+                pos = nx.spring_layout(G, k=2, iterations=50)
+
+        # Identify nodes by type
+        root_nodes = [n for n in G.nodes() if G.in_degree(n) == 0]
+        leaf_nodes = [n for n in G.nodes() if G.out_degree(n) == 0]
+        middle_nodes = [n for n in G.nodes()
+                        if n not in root_nodes and n not in leaf_nodes]
+
+        # Draw nodes with different colors
+        if root_nodes:
+            nx.draw_networkx_nodes(G, pos, nodelist=root_nodes,
+                                   node_color='lightgreen', node_size=node_size, ax=ax)
+        if middle_nodes:
+            nx.draw_networkx_nodes(G, pos, nodelist=middle_nodes,
+                                   node_color='lightblue', node_size=node_size, ax=ax)
+        if leaf_nodes:
+            nx.draw_networkx_nodes(G, pos, nodelist=leaf_nodes,
+                                   node_color='lightyellow', node_size=node_size, ax=ax)
+
+        # Draw edges
+        nx.draw_networkx_edges(G, pos, edge_color='gray',
+                               arrows=True, arrowsize=20, ax=ax,
+                               connectionstyle="arc3,rad=0.1")
+
+        # Draw labels
+        labels = nx.get_node_attributes(G, 'label')
+        nx.draw_networkx_labels(G, pos, labels, font_size=font_size, ax=ax)
+
+        ax.set_title(f"Task Dependencies: {self.name or 'Project'}")
+        ax.axis('off')
+
+        # Add legend
+        from matplotlib.patches import Patch
+        legend_elements = [
+            Patch(facecolor='lightgreen', edgecolor='gray', label='Start Tasks'),
+            Patch(facecolor='lightblue', edgecolor='gray', label='Middle Tasks'),
+            Patch(facecolor='lightyellow', edgecolor='gray', label='End Tasks'),
+        ]
+        ax.legend(handles=legend_elements, loc='upper left')
+
+        plt.tight_layout()
 
         if save_path:
             plt.savefig(save_path, dpi=300, bbox_inches='tight')
