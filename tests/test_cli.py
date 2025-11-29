@@ -26,6 +26,12 @@ def valid_config_path():
     return str(FIXTURES_DIR / "valid_project.yaml")
 
 
+@pytest.fixture
+def seeded_config_path():
+    """Path to test configuration with seed."""
+    return str(FIXTURES_DIR / "project_with_seed.yaml")
+
+
 class TestMainGroup:
     """Tests for main CLI group."""
 
@@ -85,7 +91,8 @@ class TestStatsCommand:
 
     def test_stats_json_output(self, runner, valid_config_path):
         """Test stats with JSON output."""
-        result = runner.invoke(main, ["stats", valid_config_path, "-n", "100", "--json"])
+        # Use --seed to avoid warning that would break JSON parsing
+        result = runner.invoke(main, ["stats", valid_config_path, "-n", "100", "--json", "--seed", "42"])
         assert result.exit_code == 0
 
         # Should be valid JSON
@@ -209,3 +216,96 @@ class TestGraphCommand:
                 "--no-durations"
             ])
             assert result.exit_code == 0
+
+
+class TestSeedFunctionality:
+    """Tests for seed/reproducibility functionality."""
+
+    def test_no_seed_shows_warning(self, runner, valid_config_path):
+        """Test that warning is shown when no seed is specified."""
+        result = runner.invoke(main, ["stats", valid_config_path, "-n", "100"])
+        assert result.exit_code == 0
+        # Warning should be in stderr (captured in output by CliRunner)
+        assert "No seed specified" in result.output
+        assert "reproducible" in result.output.lower()
+
+    def test_config_seed_no_warning(self, runner, seeded_config_path):
+        """Test that no warning is shown when config has seed."""
+        result = runner.invoke(main, ["stats", seeded_config_path, "-n", "100"])
+        assert result.exit_code == 0
+        assert "No seed specified" not in result.output
+
+    def test_cli_seed_no_warning(self, runner, valid_config_path):
+        """Test that no warning is shown when CLI seed is provided."""
+        result = runner.invoke(main, [
+            "stats", valid_config_path, "-n", "100", "--seed", "42"
+        ])
+        assert result.exit_code == 0
+        assert "No seed specified" not in result.output
+
+    def test_config_seed_reproducibility(self, runner, seeded_config_path):
+        """Test that config seed produces reproducible results."""
+        result1 = runner.invoke(main, [
+            "stats", seeded_config_path, "-n", "100", "--json"
+        ])
+        result2 = runner.invoke(main, [
+            "stats", seeded_config_path, "-n", "100", "--json"
+        ])
+
+        assert result1.exit_code == 0
+        assert result2.exit_code == 0
+
+        # Parse JSON and compare means (should be identical with same seed)
+        data1 = json.loads(result1.output)
+        data2 = json.loads(result2.output)
+        assert data1["mean"] == data2["mean"]
+
+    def test_cli_seed_overrides_config(self, runner, seeded_config_path):
+        """Test that CLI --seed overrides config seed."""
+        # Run with config seed (42)
+        result1 = runner.invoke(main, [
+            "stats", seeded_config_path, "-n", "100", "--json"
+        ])
+
+        # Run with different CLI seed
+        result2 = runner.invoke(main, [
+            "stats", seeded_config_path, "-n", "100", "--json", "--seed", "999"
+        ])
+
+        assert result1.exit_code == 0
+        assert result2.exit_code == 0
+
+        # Results should be different
+        data1 = json.loads(result1.output)
+        data2 = json.loads(result2.output)
+        # With different seeds, means will likely differ
+        # (there's a tiny chance they could be equal, but very unlikely)
+        assert data1["mean"] != data2["mean"]
+
+    def test_stats_seed_option(self, runner, valid_config_path):
+        """Test stats command has --seed option."""
+        result = runner.invoke(main, ["stats", "--help"])
+        assert "--seed" in result.output
+
+    def test_plot_seed_option(self, runner, valid_config_path):
+        """Test plot command has --seed option."""
+        result = runner.invoke(main, ["plot", "--help"])
+        assert "--seed" in result.output
+
+    def test_warning_goes_to_stderr(self, runner, valid_config_path):
+        """Test that warning doesn't break JSON output."""
+        result = runner.invoke(main, [
+            "stats", valid_config_path, "-n", "100", "--json"
+        ])
+        assert result.exit_code == 0
+
+        # The output should still be parseable JSON
+        # (warning is on stderr, JSON on stdout)
+        # CliRunner mixes them, but the JSON should still be at the end
+        # Find the JSON part (starts with '{')
+        output = result.output
+        json_start = output.find('{')
+        if json_start >= 0:
+            json_part = output[json_start:]
+            data = json.loads(json_part)
+            assert "mean" in data

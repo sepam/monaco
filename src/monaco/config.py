@@ -1,6 +1,6 @@
 """YAML configuration loader for Monaco projects."""
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 import yaml
 
@@ -145,6 +145,26 @@ def build_project_from_config(config: Dict[str, Any]) -> Project:
     return project
 
 
+def get_seed_from_config(config: Dict[str, Any]) -> Optional[int]:
+    """Extract the seed value from configuration.
+
+    Parameters
+    ----------
+    config : Dict[str, Any]
+        Parsed configuration dictionary
+
+    Returns
+    -------
+    Optional[int]
+        The seed value if specified, None otherwise
+    """
+    project_config = config.get('project', {})
+    seed = project_config.get('seed')
+    if seed is not None:
+        return int(seed)
+    return None
+
+
 def get_template_config(project_name: str = "My Project") -> str:
     """Generate a template YAML configuration.
 
@@ -164,6 +184,7 @@ def get_template_config(project_name: str = "My Project") -> str:
 project:
   name: "{project_name}"
   unit: "days"
+  # seed: 42  # Uncomment for reproducible results
 
 tasks:
   # Task ID is used for dependencies

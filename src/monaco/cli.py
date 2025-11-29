@@ -11,8 +11,47 @@ from monaco.config import (
     load_config,
     build_project_from_config,
     get_template_config,
+    get_seed_from_config,
     ConfigError,
 )
+
+
+def _setup_seed(config: dict, cli_seed: Optional[int]) -> None:
+    """Set up random seed from config or CLI, with warning if none specified.
+
+    Priority: CLI --seed > YAML config seed > random (no seed)
+
+    Parameters
+    ----------
+    config : dict
+        Parsed configuration dictionary
+    cli_seed : Optional[int]
+        Seed from CLI --seed option (takes priority)
+    """
+    import random
+
+    # CLI seed takes priority over config seed
+    if cli_seed is not None:
+        random.seed(cli_seed)
+        return
+
+    # Try config seed
+    config_seed = get_seed_from_config(config)
+    if config_seed is not None:
+        random.seed(config_seed)
+        return
+
+    # No seed specified - show warning
+    click.secho(
+        "Note: No seed specified. Results will vary between runs.",
+        fg='yellow',
+        err=True
+    )
+    click.secho(
+        "      Add 'seed: <number>' to your project config for reproducible results.",
+        fg='yellow',
+        err=True
+    )
 
 
 @click.group()
@@ -83,11 +122,8 @@ def run(config_file: str, simulations: int, output: Optional[str],
         monaco run project.yaml -n 10000 -o results.json
     """
     try:
-        if seed is not None:
-            import random
-            random.seed(seed)
-
         config = load_config(config_file)
+        _setup_seed(config, seed)
         project = build_project_from_config(config)
 
         if output:
@@ -112,7 +148,10 @@ def run(config_file: str, simulations: int, output: Optional[str],
               help='Number of simulations to run')
 @click.option('--json', 'as_json', is_flag=True,
               help='Output as JSON instead of formatted text')
-def stats(config_file: str, simulations: int, as_json: bool) -> None:
+@click.option('--seed', default=None, type=int,
+              help='Random seed for reproducibility (overrides config)')
+def stats(config_file: str, simulations: int, as_json: bool,
+          seed: Optional[int]) -> None:
     """Calculate and display project statistics.
 
     CONFIG_FILE: Path to the YAML project configuration file.
@@ -122,6 +161,7 @@ def stats(config_file: str, simulations: int, as_json: bool) -> None:
     """
     try:
         config = load_config(config_file)
+        _setup_seed(config, seed)
         project = build_project_from_config(config)
 
         stats_result = project.statistics(n=simulations)
@@ -151,8 +191,11 @@ def stats(config_file: str, simulations: int, as_json: bool) -> None:
               help='Show kernel density estimate on histogram')
 @click.option('-p', '--percentile', 'percentiles', multiple=True, type=int,
               help='Percentile markers to show (e.g., -p 50 -p 85 -p 95)')
+@click.option('--seed', default=None, type=int,
+              help='Random seed for reproducibility (overrides config)')
 def plot(config_file: str, simulations: int, output: Optional[str],
-         cumulative: bool, kde: bool, percentiles: Tuple[int, ...]) -> None:
+         cumulative: bool, kde: bool, percentiles: Tuple[int, ...],
+         seed: Optional[int]) -> None:
     """Generate visualization of simulation results.
 
     CONFIG_FILE: Path to the YAML project configuration file.
@@ -166,6 +209,7 @@ def plot(config_file: str, simulations: int, output: Optional[str],
     """
     try:
         config = load_config(config_file)
+        _setup_seed(config, seed)
         project = build_project_from_config(config)
 
         percentiles_list = list(percentiles) if percentiles else None

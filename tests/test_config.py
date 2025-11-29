@@ -7,6 +7,7 @@ from monaco.config import (
     load_config,
     build_project_from_config,
     get_template_config,
+    get_seed_from_config,
     ConfigError,
 )
 from monaco import Project
@@ -119,3 +120,43 @@ class TestGetTemplateConfig:
         for task_id, task_config in config["tasks"].items():
             assert "min_duration" in task_config
             assert "max_duration" in task_config
+
+    def test_template_has_seed_comment(self):
+        """Test that template includes commented seed option."""
+        template = get_template_config("Test")
+        assert "# seed:" in template
+        assert "reproducible" in template.lower()
+
+
+class TestGetSeedFromConfig:
+    """Tests for get_seed_from_config function."""
+
+    def test_get_seed_when_present(self):
+        """Test extracting seed from config that has one."""
+        config = load_config(str(FIXTURES_DIR / "project_with_seed.yaml"))
+        seed = get_seed_from_config(config)
+        assert seed == 42
+
+    def test_get_seed_when_absent(self):
+        """Test extracting seed from config without one."""
+        config = load_config(str(FIXTURES_DIR / "valid_project.yaml"))
+        seed = get_seed_from_config(config)
+        assert seed is None
+
+    def test_seed_enables_reproducibility(self):
+        """Test that using the same seed produces identical results."""
+        import random
+
+        config = load_config(str(FIXTURES_DIR / "project_with_seed.yaml"))
+        seed = get_seed_from_config(config)
+        project = build_project_from_config(config)
+
+        # Run with seed
+        random.seed(seed)
+        result1 = project.estimate()
+
+        # Run again with same seed
+        random.seed(seed)
+        result2 = project.estimate()
+
+        assert result1 == result2
