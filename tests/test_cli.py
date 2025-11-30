@@ -1,14 +1,12 @@
 """Tests for Monaco CLI commands."""
-import os
+
 import json
-import tempfile
 from pathlib import Path
 
 import pytest
 from click.testing import CliRunner
 
 from monaco.cli import main
-
 
 # Get path to fixtures directory
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
@@ -92,7 +90,9 @@ class TestStatsCommand:
     def test_stats_json_output(self, runner, valid_config_path):
         """Test stats with JSON output."""
         # Use --seed to avoid warning that would break JSON parsing
-        result = runner.invoke(main, ["stats", valid_config_path, "-n", "100", "--json", "--seed", "42"])
+        result = runner.invoke(
+            main, ["stats", valid_config_path, "-n", "100", "--json", "--seed", "42"]
+        )
         assert result.exit_code == 0
 
         # Should be valid JSON
@@ -120,12 +120,19 @@ class TestRunCommand:
     def test_run_to_json_file(self, runner, valid_config_path):
         """Test run command exports to JSON file."""
         with runner.isolated_filesystem():
-            result = runner.invoke(main, [
-                "run", valid_config_path,
-                "-n", "100",
-                "-o", "results.json",
-                "-f", "json"
-            ])
+            result = runner.invoke(
+                main,
+                [
+                    "run",
+                    valid_config_path,
+                    "-n",
+                    "100",
+                    "-o",
+                    "results.json",
+                    "-f",
+                    "json",
+                ],
+            )
             assert result.exit_code == 0
             assert Path("results.json").exists()
 
@@ -137,20 +144,27 @@ class TestRunCommand:
     def test_run_to_csv_file(self, runner, valid_config_path):
         """Test run command exports to CSV file."""
         with runner.isolated_filesystem():
-            result = runner.invoke(main, [
-                "run", valid_config_path,
-                "-n", "100",
-                "-o", "results.csv",
-                "-f", "csv"
-            ])
+            result = runner.invoke(
+                main,
+                [
+                    "run",
+                    valid_config_path,
+                    "-n",
+                    "100",
+                    "-o",
+                    "results.csv",
+                    "-f",
+                    "csv",
+                ],
+            )
             assert result.exit_code == 0
             assert Path("results.csv").exists()
 
     def test_run_with_seed(self, runner, valid_config_path):
         """Test run command with random seed for reproducibility."""
-        result = runner.invoke(main, [
-            "run", valid_config_path, "-n", "100", "--seed", "42"
-        ])
+        result = runner.invoke(
+            main, ["run", valid_config_path, "-n", "100", "--seed", "42"]
+        )
         # Should run successfully with seed
         assert result.exit_code == 0
         assert "Project:" in result.output
@@ -162,11 +176,9 @@ class TestPlotCommand:
     def test_plot_to_file(self, runner, valid_config_path):
         """Test plot command saves to file."""
         with runner.isolated_filesystem():
-            result = runner.invoke(main, [
-                "plot", valid_config_path,
-                "-n", "100",
-                "-o", "chart.png"
-            ])
+            result = runner.invoke(
+                main, ["plot", valid_config_path, "-n", "100", "-o", "chart.png"]
+            )
             assert result.exit_code == 0
             assert Path("chart.png").exists()
             assert "saved" in result.output.lower()
@@ -174,23 +186,40 @@ class TestPlotCommand:
     def test_plot_with_percentiles(self, runner, valid_config_path):
         """Test plot with percentile markers."""
         with runner.isolated_filesystem():
-            result = runner.invoke(main, [
-                "plot", valid_config_path,
-                "-n", "100",
-                "-o", "chart.png",
-                "-p", "50", "-p", "85", "-p", "95"
-            ])
+            result = runner.invoke(
+                main,
+                [
+                    "plot",
+                    valid_config_path,
+                    "-n",
+                    "100",
+                    "-o",
+                    "chart.png",
+                    "-p",
+                    "50",
+                    "-p",
+                    "85",
+                    "-p",
+                    "95",
+                ],
+            )
             assert result.exit_code == 0
 
     def test_plot_cumulative(self, runner, valid_config_path):
         """Test cumulative plot option."""
         with runner.isolated_filesystem():
-            result = runner.invoke(main, [
-                "plot", valid_config_path,
-                "-n", "100",
-                "-o", "chart.png",
-                "--cumulative"
-            ])
+            result = runner.invoke(
+                main,
+                [
+                    "plot",
+                    valid_config_path,
+                    "-n",
+                    "100",
+                    "-o",
+                    "chart.png",
+                    "--cumulative",
+                ],
+            )
             assert result.exit_code == 0
 
 
@@ -200,21 +229,18 @@ class TestGraphCommand:
     def test_graph_to_file(self, runner, valid_config_path):
         """Test graph command saves to file."""
         with runner.isolated_filesystem():
-            result = runner.invoke(main, [
-                "graph", valid_config_path,
-                "-o", "graph.png"
-            ])
+            result = runner.invoke(
+                main, ["graph", valid_config_path, "-o", "graph.png"]
+            )
             assert result.exit_code == 0
             assert Path("graph.png").exists()
 
     def test_graph_no_durations(self, runner, valid_config_path):
         """Test graph with --no-durations flag."""
         with runner.isolated_filesystem():
-            result = runner.invoke(main, [
-                "graph", valid_config_path,
-                "-o", "graph.png",
-                "--no-durations"
-            ])
+            result = runner.invoke(
+                main, ["graph", valid_config_path, "-o", "graph.png", "--no-durations"]
+            )
             assert result.exit_code == 0
 
 
@@ -237,20 +263,20 @@ class TestSeedFunctionality:
 
     def test_cli_seed_no_warning(self, runner, valid_config_path):
         """Test that no warning is shown when CLI seed is provided."""
-        result = runner.invoke(main, [
-            "stats", valid_config_path, "-n", "100", "--seed", "42"
-        ])
+        result = runner.invoke(
+            main, ["stats", valid_config_path, "-n", "100", "--seed", "42"]
+        )
         assert result.exit_code == 0
         assert "No seed specified" not in result.output
 
     def test_config_seed_reproducibility(self, runner, seeded_config_path):
         """Test that config seed produces reproducible results."""
-        result1 = runner.invoke(main, [
-            "stats", seeded_config_path, "-n", "100", "--json"
-        ])
-        result2 = runner.invoke(main, [
-            "stats", seeded_config_path, "-n", "100", "--json"
-        ])
+        result1 = runner.invoke(
+            main, ["stats", seeded_config_path, "-n", "100", "--json"]
+        )
+        result2 = runner.invoke(
+            main, ["stats", seeded_config_path, "-n", "100", "--json"]
+        )
 
         assert result1.exit_code == 0
         assert result2.exit_code == 0
@@ -263,14 +289,14 @@ class TestSeedFunctionality:
     def test_cli_seed_overrides_config(self, runner, seeded_config_path):
         """Test that CLI --seed overrides config seed."""
         # Run with config seed (42)
-        result1 = runner.invoke(main, [
-            "stats", seeded_config_path, "-n", "100", "--json"
-        ])
+        result1 = runner.invoke(
+            main, ["stats", seeded_config_path, "-n", "100", "--json"]
+        )
 
         # Run with different CLI seed
-        result2 = runner.invoke(main, [
-            "stats", seeded_config_path, "-n", "100", "--json", "--seed", "999"
-        ])
+        result2 = runner.invoke(
+            main, ["stats", seeded_config_path, "-n", "100", "--json", "--seed", "999"]
+        )
 
         assert result1.exit_code == 0
         assert result2.exit_code == 0
@@ -294,9 +320,9 @@ class TestSeedFunctionality:
 
     def test_warning_goes_to_stderr(self, runner, valid_config_path):
         """Test that warning doesn't break JSON output."""
-        result = runner.invoke(main, [
-            "stats", valid_config_path, "-n", "100", "--json"
-        ])
+        result = runner.invoke(
+            main, ["stats", valid_config_path, "-n", "100", "--json"]
+        )
         assert result.exit_code == 0
 
         # The output should still be parseable JSON
@@ -304,7 +330,7 @@ class TestSeedFunctionality:
         # CliRunner mixes them, but the JSON should still be at the end
         # Find the JSON part (starts with '{')
         output = result.output
-        json_start = output.find('{')
+        json_start = output.find("{")
         if json_start >= 0:
             json_part = output[json_start:]
             data = json.loads(json_part)

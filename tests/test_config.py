@@ -1,17 +1,17 @@
 """Tests for YAML configuration loading."""
-import os
-import pytest
+
 from pathlib import Path
 
-from monaco.config import (
-    load_config,
-    build_project_from_config,
-    get_template_config,
-    get_seed_from_config,
-    ConfigError,
-)
-from monaco import Project
+import pytest
 
+from monaco import Project
+from monaco.config import (
+    ConfigError,
+    build_project_from_config,
+    get_seed_from_config,
+    get_template_config,
+    load_config,
+)
 
 # Get path to fixtures directory
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
@@ -117,7 +117,7 @@ class TestGetTemplateConfig:
 
         assert len(config["tasks"]) > 0
         # Check that tasks have required fields
-        for task_id, task_config in config["tasks"].items():
+        for _task_id, task_config in config["tasks"].items():
             assert "min_duration" in task_config
             assert "max_duration" in task_config
 

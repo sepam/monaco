@@ -1,7 +1,8 @@
 """Logic for creating Tasks"""
-from datetime import datetime
+
 import random
 import uuid
+from datetime import datetime
 from typing import Optional
 
 
@@ -13,9 +14,9 @@ class Task:
         min_duration: Optional[float] = None,
         mode_duration: Optional[float] = None,
         max_duration: Optional[float] = None,
-        estimator: str = 'triangular'
+        estimator: str = "triangular",
     ) -> None:
-        """ Task class.
+        """Task class.
 
         Parameters
         ----------
@@ -45,8 +46,10 @@ class Task:
         self.estimator = estimator
 
         # Validate estimator
-        if self.estimator not in ['triangular', 'uniform']:
-            raise ValueError(f"Invalid estimator '{self.estimator}'. Must be 'triangular' or 'uniform'")
+        if self.estimator not in ["triangular", "uniform"]:
+            raise ValueError(
+                f"Invalid estimator '{self.estimator}'. Must be 'triangular' or 'uniform'"
+            )
 
         # Validate duration values
         if min_duration is not None and min_duration < 0:
@@ -59,8 +62,12 @@ class Task:
             raise ValueError(f"mode_duration must be non-negative, got {mode_duration}")
 
         # Validate ordering for triangular distribution
-        if self.estimator == 'triangular':
-            if min_duration is not None and max_duration is not None and mode_duration is not None:
+        if self.estimator == "triangular":
+            if (
+                min_duration is not None
+                and max_duration is not None
+                and mode_duration is not None
+            ):
                 if not (min_duration <= mode_duration <= max_duration):
                     raise ValueError(
                         f"For triangular distribution, must have min_duration <= mode_duration <= max_duration. "
@@ -68,7 +75,7 @@ class Task:
                     )
 
         # Validate ordering for uniform distribution
-        if self.estimator == 'uniform':
+        if self.estimator == "uniform":
             if min_duration is not None and max_duration is not None:
                 if min_duration > max_duration:
                     raise ValueError(
@@ -90,15 +97,24 @@ class Task:
         ValueError
             If required duration parameters are None
         """
-        if self.estimator == 'triangular':
-            if self.min_duration is None or self.mode_duration is None or self.max_duration is None:
-                raise ValueError("min_duration, mode_duration, and max_duration must be set for triangular estimator")
-            est = random.triangular(low=self.min_duration, mode=self.mode_duration,
-                                    high=self.max_duration)
+        if self.estimator == "triangular":
+            if (
+                self.min_duration is None
+                or self.mode_duration is None
+                or self.max_duration is None
+            ):
+                raise ValueError(
+                    "min_duration, mode_duration, and max_duration must be set for triangular estimator"
+                )
+            est = random.triangular(
+                low=self.min_duration, mode=self.mode_duration, high=self.max_duration
+            )
 
-        elif self.estimator == 'uniform':
+        elif self.estimator == "uniform":
             if self.min_duration is None or self.max_duration is None:
-                raise ValueError("min_duration and max_duration must be set for uniform estimator")
+                raise ValueError(
+                    "min_duration and max_duration must be set for uniform estimator"
+                )
             est = random.uniform(self.min_duration, self.max_duration)
 
         else:
