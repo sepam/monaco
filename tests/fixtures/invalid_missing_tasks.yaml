@@ -1,0 +1,4 @@
+# Invalid: missing tasks section
+project:
+  name: "Test Project"
+  unit: "days"

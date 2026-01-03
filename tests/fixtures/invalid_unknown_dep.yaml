@@ -1,0 +1,19 @@
+# Invalid: references unknown dependency
+project:
+  name: "Test Project"
+  unit: "days"
+
+tasks:
+  design:
+    name: "Design"
+    min_duration: 1
+    mode_duration: 2
+    max_duration: 3
+
+  development:
+    name: "Development"
+    min_duration: 5
+    mode_duration: 8
+    max_duration: 12
+    depends_on:
+      - nonexistent_task

@@ -1,0 +1,29 @@
+# Valid project configuration for testing
+project:
+  name: "Test Project"
+  unit: "days"
+
+tasks:
+  design:
+    name: "Design Phase"
+    min_duration: 2
+    mode_duration: 3
+    max_duration: 5
+    estimator: "triangular"
+
+  development:
+    name: "Development"
+    min_duration: 5
+    mode_duration: 8
+    max_duration: 12
+    estimator: "triangular"
+    depends_on:
+      - design
+
+  testing:
+    name: "Testing"
+    min_duration: 1
+    max_duration: 3
+    estimator: "uniform"
+    depends_on:
+      - development

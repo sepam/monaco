@@ -1,9 +1,14 @@
-"""Logic for creating Tasks"""
+"""Logic for creating Tasks."""
 
-import random
 import uuid
 from datetime import datetime
 from typing import Optional
+
+from monaco.distributions import (
+    DISTRIBUTION_REGISTRY,
+    Distribution,
+    create_distribution,
+)
 
 
 class Task:
@@ -15,109 +20,138 @@ class Task:
         mode_duration: Optional[float] = None,
         max_duration: Optional[float] = None,
         estimator: str = "triangular",
+        distribution: Optional[Distribution] = None,
     ) -> None:
-        """Task class.
+        """Task class with flexible distribution specification.
 
         Parameters
         ----------
         name : str, optional
-            Description or name of a task
-        min_duration : float
-            The minimum estimated number of units to complete a task
-        mode_duration : float
-            The most likely estimated number of units to complete a task
-        max_duration : float
-            The maximum estimated number of units to complete a task
-        estimator : str
-            An estimator in form of a probability distribution ('triangular' or 'uniform')
+            Description or name of a task.
+        min_duration : float, optional
+            The minimum estimated number of units to complete a task.
+            Used for triangular and uniform distributions.
+        mode_duration : float, optional
+            The most likely estimated number of units to complete a task.
+            Required for triangular distribution.
+        max_duration : float, optional
+            The maximum estimated number of units to complete a task.
+            Used for triangular and uniform distributions.
+        estimator : str, optional
+            Distribution type: 'triangular', 'uniform', or 'normal'.
+            Default is 'triangular'.
+        distribution : Distribution, optional
+            A Distribution object. If provided, overrides the legacy
+            parameters (min_duration, mode_duration, max_duration, estimator).
 
         Raises
         ------
         ValueError
-            If estimator is not 'triangular' or 'uniform'
-            If duration values are invalid (negative or not ordered correctly)
+            If estimator is unknown or if duration values are invalid.
+
+        Examples
+        --------
+        Legacy style (backward compatible):
+
+        >>> task = Task(
+        ...     name="Development",
+        ...     min_duration=5,
+        ...     mode_duration=8,
+        ...     max_duration=12,
+        ...     estimator="triangular"
+        ... )
+
+        New style with Distribution object:
+
+        >>> from monaco.distributions import NormalDistribution
+        >>> dist = NormalDistribution(mean=8.0, std_dev=2.0)
+        >>> task = Task(name="Development", distribution=dist)
         """
         self.task_id = str(uuid.uuid4())
         self.cdate = datetime.now()
         self.name = name
-        self.mode_duration = mode_duration
-        self.min_duration = min_duration
-        self.max_duration = max_duration
-        self.estimator = estimator
 
-        # Validate estimator
-        if self.estimator not in ["triangular", "uniform"]:
+        # Validate estimator early (even if no distribution is created yet)
+        if distribution is None and estimator not in DISTRIBUTION_REGISTRY:
             raise ValueError(
-                f"Invalid estimator '{self.estimator}'. Must be 'triangular' or 'uniform'"
+                f"Invalid estimator '{estimator}'. "
+                f"Valid options: {list(DISTRIBUTION_REGISTRY.keys())}"
             )
 
-        # Validate duration values
-        if min_duration is not None and min_duration < 0:
-            raise ValueError(f"min_duration must be non-negative, got {min_duration}")
+        # Store legacy parameters for backward-compatible access
+        self._min_duration = min_duration
+        self._mode_duration = mode_duration
+        self._max_duration = max_duration
+        self._estimator_hint = estimator
 
-        if max_duration is not None and max_duration < 0:
-            raise ValueError(f"max_duration must be non-negative, got {max_duration}")
+        if distribution is not None:
+            # New-style: Distribution object provided directly
+            self._distribution: Optional[Distribution] = distribution
+        elif min_duration is not None or max_duration is not None:
+            # Legacy-style: create distribution from parameters
+            self._distribution = create_distribution(
+                estimator=estimator,
+                min_duration=min_duration,
+                mode_duration=mode_duration,
+                max_duration=max_duration,
+            )
+        else:
+            # No parameters provided - defer validation to estimate()
+            self._distribution = None
 
-        if mode_duration is not None and mode_duration < 0:
-            raise ValueError(f"mode_duration must be non-negative, got {mode_duration}")
+    @property
+    def distribution(self) -> Optional[Distribution]:
+        """Get the distribution object."""
+        return self._distribution
 
-        # Validate ordering for triangular distribution
-        if self.estimator == "triangular":
-            if (
-                min_duration is not None
-                and max_duration is not None
-                and mode_duration is not None
-            ):
-                if not (min_duration <= mode_duration <= max_duration):
-                    raise ValueError(
-                        f"For triangular distribution, must have min_duration <= mode_duration <= max_duration. "
-                        f"Got min={min_duration}, mode={mode_duration}, max={max_duration}"
-                    )
+    @property
+    def estimator(self) -> str:
+        """Get the estimator name (for backward compatibility)."""
+        if self._distribution is not None:
+            return self._distribution.name
+        return self._estimator_hint
 
-        # Validate ordering for uniform distribution
-        if self.estimator == "uniform":
-            if min_duration is not None and max_duration is not None:
-                if min_duration > max_duration:
-                    raise ValueError(
-                        f"For uniform distribution, must have min_duration <= max_duration. "
-                        f"Got min={min_duration}, max={max_duration}"
-                    )
+    @property
+    def min_duration(self) -> Optional[float]:
+        """Get the minimum duration (for backward compatibility)."""
+        if self._distribution is not None:
+            if hasattr(self._distribution, "min_value"):
+                return self._distribution.min_value
+        return self._min_duration
+
+    @property
+    def mode_duration(self) -> Optional[float]:
+        """Get the mode duration (for backward compatibility)."""
+        if self._distribution is not None:
+            if hasattr(self._distribution, "mode_value"):
+                return self._distribution.mode_value
+        return self._mode_duration
+
+    @property
+    def max_duration(self) -> Optional[float]:
+        """Get the maximum duration (for backward compatibility)."""
+        if self._distribution is not None:
+            if hasattr(self._distribution, "max_value"):
+                return self._distribution.max_value
+        return self._max_duration
 
     def estimate(self) -> float:
-        """Estimate duration of a task following a probability
-        distribution.
+        """Estimate duration of a task by sampling from the distribution.
 
         Returns
         -------
         float
-            An estimated duration sampled from the specified probability distribution
+            An estimated duration sampled from the specified probability
+            distribution.
 
         Raises
         ------
         ValueError
-            If required duration parameters are None
+            If distribution is not configured.
         """
-        if self.estimator == "triangular":
-            if (
-                self.min_duration is None
-                or self.mode_duration is None
-                or self.max_duration is None
-            ):
-                raise ValueError(
-                    "min_duration, mode_duration, and max_duration must be set for triangular estimator"
-                )
-            est = random.triangular(
-                low=self.min_duration, mode=self.mode_duration, high=self.max_duration
+        if self._distribution is None:
+            raise ValueError(
+                "Task distribution not configured. "
+                "Provide duration parameters or a Distribution object."
             )
-
-        elif self.estimator == "uniform":
-            if self.min_duration is None or self.max_duration is None:
-                raise ValueError(
-                    "min_duration and max_duration must be set for uniform estimator"
-                )
-            est = random.uniform(self.min_duration, self.max_duration)
-
-        else:
-            raise ValueError(f"Unknown estimator: {self.estimator}")
-
-        return est
+        return self._distribution.sample()

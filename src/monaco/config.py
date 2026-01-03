@@ -5,6 +5,7 @@ from typing import Any, Dict, Optional
 
 import yaml
 
+from monaco.distributions import DISTRIBUTION_REGISTRY, create_distribution
 from monaco.project import Project
 from monaco.task import Task
 
@@ -66,18 +67,56 @@ def _validate_config(config: Dict[str, Any]) -> None:
         if task_config is None:
             raise ConfigError(f"Task '{task_id}' has no configuration")
 
-        # Check required fields
-        if "min_duration" not in task_config:
-            raise ConfigError(f"Task '{task_id}' missing required field 'min_duration'")
-        if "max_duration" not in task_config:
-            raise ConfigError(f"Task '{task_id}' missing required field 'max_duration'")
-
         # Validate estimator
         estimator = task_config.get("estimator", "triangular")
-        if estimator == "triangular" and "mode_duration" not in task_config:
+        if estimator not in DISTRIBUTION_REGISTRY:
             raise ConfigError(
-                f"Task '{task_id}' uses triangular estimator but missing 'mode_duration'"
+                f"Task '{task_id}' has unknown estimator '{estimator}'. "
+                f"Valid options: {list(DISTRIBUTION_REGISTRY.keys())}"
             )
+
+        # Validate required fields based on estimator type
+        if estimator in ("normal", "lognormal"):
+            # Normal and LogNormal distributions use mean and std_dev
+            if "mean" not in task_config:
+                raise ConfigError(
+                    f"Task '{task_id}' uses {estimator} estimator but missing 'mean'"
+                )
+            if "std_dev" not in task_config:
+                raise ConfigError(
+                    f"Task '{task_id}' uses {estimator} estimator but missing 'std_dev'"
+                )
+        elif estimator == "beta":
+            # Beta distribution uses alpha, beta, and max_value
+            if "alpha" not in task_config:
+                raise ConfigError(
+                    f"Task '{task_id}' uses beta estimator but missing 'alpha'"
+                )
+            if "beta" not in task_config:
+                raise ConfigError(
+                    f"Task '{task_id}' uses beta estimator but missing 'beta'"
+                )
+            if "max_value" not in task_config:
+                raise ConfigError(
+                    f"Task '{task_id}' uses beta estimator but missing 'max_value'"
+                )
+        else:
+            # Triangular, uniform, and PERT use min_duration/max_duration
+            if "min_duration" not in task_config:
+                raise ConfigError(
+                    f"Task '{task_id}' missing required field 'min_duration'"
+                )
+            if "max_duration" not in task_config:
+                raise ConfigError(
+                    f"Task '{task_id}' missing required field 'max_duration'"
+                )
+            if (
+                estimator in ("triangular", "pert")
+                and "mode_duration" not in task_config
+            ):
+                raise ConfigError(
+                    f"Task '{task_id}' uses {estimator} estimator but missing 'mode_duration'"
+                )
 
         # Validate dependency references
         if "depends_on" in task_config:
@@ -110,12 +149,26 @@ def build_project_from_config(config: Dict[str, Any]) -> Project:
     tasks: Dict[str, Task] = {}
 
     for task_id, task_config in config["tasks"].items():
-        task = Task(
-            name=task_config.get("name", task_id),
+        estimator = task_config.get("estimator", "triangular")
+
+        # Create distribution using factory
+        distribution = create_distribution(
+            estimator=estimator,
             min_duration=task_config.get("min_duration"),
             mode_duration=task_config.get("mode_duration"),
             max_duration=task_config.get("max_duration"),
-            estimator=task_config.get("estimator", "triangular"),
+            mean=task_config.get("mean"),
+            std_dev=task_config.get("std_dev"),
+            min_value=task_config.get("min_value"),
+            max_value=task_config.get("max_value"),
+            alpha=task_config.get("alpha"),
+            beta=task_config.get("beta"),
+            lamb=task_config.get("lamb"),
+        )
+
+        task = Task(
+            name=task_config.get("name", task_id),
+            distribution=distribution,
         )
         tasks[task_id] = task
 
@@ -181,6 +234,14 @@ def get_template_config(project_name: str = "My Project") -> str:
     """
     return f"""# Monaco Project Configuration
 # Documentation: https://github.com/sepam/monaco
+#
+# Available distributions:
+#   - triangular: min_duration, mode_duration, max_duration (most common)
+#   - pert: min_duration, mode_duration, max_duration (smoother than triangular)
+#   - uniform: min_duration, max_duration (equal probability)
+#   - normal: mean, std_dev (bell curve, for well-understood tasks)
+#   - lognormal: mean, std_dev (right-skewed, for tasks with delay risk)
+#   - beta: alpha, beta, max_value (flexible shape)
 
 project:
   name: "{project_name}"
@@ -188,7 +249,7 @@ project:
   # seed: 42  # Uncomment for reproducible results
 
 tasks:
-  # Task ID is used for dependencies
+  # Triangular: Classic 3-point estimate (optimistic, most likely, pessimistic)
   design:
     name: "Design Phase"
     min_duration: 2
@@ -196,29 +257,56 @@ tasks:
     max_duration: 5
     estimator: "triangular"
 
+  # PERT: Smoother than triangular, widely used in project management
+  # Gives more weight to the mode (most likely) value
   development:
     name: "Development"
     min_duration: 5
     mode_duration: 8
     max_duration: 12
-    estimator: "triangular"
+    estimator: "pert"
+    # lamb: 4  # Optional shape parameter (default: 4)
     depends_on:
       - design
 
-  testing:
-    name: "Testing"
-    min_duration: 2
-    mode_duration: 3
-    max_duration: 5
-    estimator: "triangular"
+  # Normal: For well-understood, predictable tasks
+  code_review:
+    name: "Code Review"
+    estimator: "normal"
+    mean: 2.0
+    std_dev: 0.5
+    # min_value: 0.5  # Optional lower bound
+    # max_value: 5.0  # Optional upper bound
     depends_on:
       - development
 
+  # LogNormal: For tasks with potential for delays (right-skewed)
+  testing:
+    name: "Testing"
+    estimator: "lognormal"
+    mean: 3.0
+    std_dev: 1.0
+    depends_on:
+      - code_review
+
+  # Beta: Flexible distribution for custom uncertainty profiles
+  # alpha=2, beta=5 creates right-skewed (more likely to finish early)
+  integration:
+    name: "Integration"
+    estimator: "beta"
+    alpha: 2.0
+    beta: 5.0
+    min_value: 1.0
+    max_value: 5.0
+    depends_on:
+      - testing
+
+  # Uniform: When all durations equally likely
   deployment:
     name: "Deployment"
     min_duration: 1
     max_duration: 2
     estimator: "uniform"
     depends_on:
-      - testing
+      - integration
 """

@@ -27,6 +27,7 @@ Estimating the time it takes to complete a task or project is hard. Traditional 
 ## Features
 
 - **Probabilistic Task Modeling** - Define tasks with min/max/mode duration ranges
+- **6 Distribution Types** - Triangular, PERT, Uniform, Normal, LogNormal, and Beta distributions
 - **Task Dependencies** - Support for parallel and sequential task execution
 - **Monte Carlo Simulation** - Run thousands of simulations to estimate project completion
 - **Statistical Analysis** - Get percentiles, confidence intervals, and key metrics
@@ -151,11 +152,125 @@ project.export_results(n=10000, format='json', filename='results.json')
 project.export_results(n=10000, format='csv', filename='results.csv')
 ```
 
-### Custom Estimators
+### Probability Distributions
 
-Monaco supports two probability distributions:
-- **Triangular**: Best when you have a most-likely estimate (min, mode, max)
-- **Uniform**: When all durations in the range are equally likely (min, max)
+Monaco supports six probability distributions, each suited for different estimation scenarios:
+
+#### Triangular Distribution (Default)
+Best for **three-point estimates** where you can identify optimistic, most likely, and pessimistic values.
+
+```python
+task = Task(
+    name="Development",
+    min_duration=5,      # Best case
+    mode_duration=8,     # Most likely
+    max_duration=15,     # Worst case
+    estimator="triangular"
+)
+```
+
+**When to use:** Most common choice. Use when you have a clear "most likely" estimate and can define reasonable bounds.
+
+#### PERT Distribution
+A smoother alternative to triangular that **weights the mode more heavily** (by default, 4x). Widely used in project management.
+
+```python
+task = Task(
+    name="Testing",
+    min_duration=2,
+    mode_duration=4,
+    max_duration=10,
+    estimator="pert"
+)
+```
+
+**When to use:** Industry standard for project estimation. Produces more realistic results than triangular by reducing the influence of extreme values.
+
+#### Uniform Distribution
+All values between min and max are **equally likely**. No mode required.
+
+```python
+task = Task(
+    name="Deployment",
+    min_duration=1,
+    max_duration=3,
+    estimator="uniform"
+)
+```
+
+**When to use:** When you genuinely don't know the most likely duration, only the range. Good for tasks with high uncertainty.
+
+#### Normal (Gaussian) Distribution
+Classic **bell curve** centered on the mean. Best for well-understood, repeatable tasks.
+
+```python
+from monaco import Task, NormalDistribution
+
+task = Task(
+    name="Code Review",
+    distribution=NormalDistribution(
+        mean=2.0,
+        std_dev=0.5,
+        min_value=0.5,  # Optional lower bound
+        max_value=4.0   # Optional upper bound
+    )
+)
+```
+
+**When to use:** Tasks you've done many times before with predictable variability. The optional bounds prevent unrealistic negative or extreme values.
+
+#### LogNormal Distribution
+**Right-skewed** distribution where delays are more likely than early completion. Realistic for many real-world tasks.
+
+```python
+from monaco import Task, LogNormalDistribution
+
+task = Task(
+    name="Integration",
+    distribution=LogNormalDistribution(
+        mean=5.0,
+        std_dev=2.0
+    )
+)
+```
+
+**When to use:** Tasks with potential for unexpected delays (debugging, third-party dependencies, approvals). Models the common pattern where things take longer than expected more often than they finish early.
+
+#### Beta Distribution
+**Most flexible** distribution with customizable shape via alpha and beta parameters.
+
+```python
+from monaco import Task, BetaDistribution
+
+task = Task(
+    name="Research",
+    distribution=BetaDistribution(
+        alpha=2.0,
+        beta=5.0,
+        min_value=1.0,
+        max_value=10.0
+    )
+)
+```
+
+**When to use:** When you need fine-grained control over the distribution shape:
+- `alpha < beta`: Right-skewed (more likely to finish early)
+- `alpha > beta`: Left-skewed (more likely to finish late)
+- `alpha = beta`: Symmetric
+
+---
+
+### Choosing the Right Distribution
+
+| Scenario | Recommended Distribution |
+|----------|-------------------------|
+| Standard 3-point estimate | PERT or Triangular |
+| Well-understood, repeatable task | Normal |
+| High uncertainty, unknown mode | Uniform |
+| Risk of delays/blockers | LogNormal |
+| Custom uncertainty profile | Beta |
+
+**New to Monte Carlo?** Start with **PERT** - it's the industry standard and works well for most project estimation tasks
 
 ---
 

@@ -204,6 +204,80 @@ class Project(Task):
         ]
         return max(completion_times) if completion_times else 0.0
 
+    def _get_critical_tasks_for_run(
+        self, task_durations: Dict[str, float]
+    ) -> Tuple[set, float]:
+        """
+        Identify critical tasks for a single simulation run.
+
+        Uses forward and backward pass to calculate slack for each task.
+        Tasks with zero slack are on the critical path.
+
+        Parameters
+        ----------
+        task_durations : Dict[str, float]
+            Mapping of task_id to duration for this simulation run
+
+        Returns
+        -------
+        Tuple[set, float]
+            Set of task_ids on the critical path, and project duration
+        """
+        if not self._tasks_dict:
+            return set(), 0.0
+
+        # Get tasks in topological order
+        sorted_tasks = self._topological_sort()
+
+        # === Forward Pass: Calculate earliest start/finish times ===
+        earliest_start: Dict[str, float] = {}
+        earliest_finish: Dict[str, float] = {}
+
+        for task_id in sorted_tasks:
+            deps = self.dependencies.get(task_id, [])
+            if not deps:
+                earliest_start[task_id] = 0.0
+            else:
+                dep_completion_times = [earliest_finish[dep_id] for dep_id in deps]
+                earliest_start[task_id] = max(dep_completion_times)
+            earliest_finish[task_id] = earliest_start[task_id] + task_durations[task_id]
+
+        # Project duration
+        project_duration = max(earliest_finish.values()) if earliest_finish else 0.0
+
+        # === Build reverse dependency map (who depends on each task) ===
+        dependents: Dict[str, List[str]] = {tid: [] for tid in self._tasks_dict}
+        for task_id, deps in self.dependencies.items():
+            for dep_id in deps:
+                dependents[dep_id].append(task_id)
+
+        # === Backward Pass: Calculate latest start/finish times ===
+        latest_finish: Dict[str, float] = {}
+        latest_start: Dict[str, float] = {}
+
+        for task_id in reversed(sorted_tasks):
+            task_dependents = dependents[task_id]
+            if not task_dependents:
+                # No dependents - can finish at project end
+                latest_finish[task_id] = project_duration
+            else:
+                # Must finish before dependents start
+                latest_finish[task_id] = min(
+                    latest_start[dep_id] for dep_id in task_dependents
+                )
+            latest_start[task_id] = latest_finish[task_id] - task_durations[task_id]
+
+        # === Identify critical tasks (slack ≈ 0) ===
+        critical_tasks = set()
+        tolerance = 1e-9  # Floating point tolerance
+
+        for task_id in self._tasks_dict:
+            slack = latest_start[task_id] - earliest_start[task_id]
+            if abs(slack) < tolerance:
+                critical_tasks.add(task_id)
+
+        return critical_tasks, project_duration
+
     def _has_dependencies(self) -> bool:
         """Check if any tasks have dependencies (non-empty dependency lists)."""
         return any(deps for deps in self.dependencies.values())
@@ -327,6 +401,82 @@ class Project(Task):
             },
             "confidence_intervals": {"95%": (float(ci_95_lower), float(ci_95_upper))},
         }
+
+    def get_critical_path_analysis(
+        self, n: int = 10000, seed: Optional[int] = None
+    ) -> Dict[str, Dict[str, Any]]:
+        """
+        Analyze critical path frequency across Monte Carlo simulations.
+
+        Runs n simulations and tracks how often each task appears on the
+        critical path. This helps identify which tasks are most likely to
+        drive the project timeline.
+
+        Parameters
+        ----------
+        n : int
+            Number of simulations to run (default: 10000)
+        seed : int, optional
+            Random seed for reproducibility
+
+        Returns
+        -------
+        Dict[str, Dict[str, Any]]
+            Dictionary mapping task names to criticality data:
+            {
+                'Task Name': {
+                    'task_id': str,
+                    'count': int,        # Times on critical path
+                    'frequency': float   # Proportion of runs (0.0 to 1.0)
+                },
+                ...
+            }
+
+        Examples
+        --------
+        >>> project = Project(name='My Project')
+        >>> # ... add tasks with dependencies ...
+        >>> analysis = project.get_critical_path_analysis(n=10000)
+        >>> for task_name, data in analysis.items():
+        ...     print(f"{task_name}: {data['frequency']:.1%} critical")
+        Design: 100.0% critical
+        Backend: 85.2% critical
+        Frontend: 14.8% critical
+        """
+        if seed is not None:
+            np.random.seed(seed)
+
+        # Track criticality count for each task
+        criticality_count: Dict[str, int] = dict.fromkeys(self._tasks_dict, 0)
+
+        # Run simulations
+        for _ in range(n):
+            # Sample durations for all tasks
+            task_durations = {
+                task_id: task.estimate() for task_id, task in self._tasks_dict.items()
+            }
+
+            # Handle projects with no dependencies (all tasks are "critical")
+            if not self._has_dependencies():
+                for task_id in self._tasks_dict:
+                    criticality_count[task_id] += 1
+            else:
+                # Get critical tasks for this run
+                critical_tasks, _ = self._get_critical_tasks_for_run(task_durations)
+                for task_id in critical_tasks:
+                    criticality_count[task_id] += 1
+
+        # Build result with task names as keys
+        result: Dict[str, Dict[str, Any]] = {}
+        for task_id, task in self._tasks_dict.items():
+            task_name = task.name or task_id[:8]
+            result[task_name] = {
+                "task_id": task_id,
+                "count": criticality_count[task_id],
+                "frequency": criticality_count[task_id] / n if n > 0 else 0.0,
+            }
+
+        return result
 
     def export_results(
         self, n: int = 10000, format: str = "json", output: str = "monaco_results.json"
@@ -514,6 +664,9 @@ class Project(Task):
         node_size: int = 3000,
         font_size: int = 9,
         show_durations: bool = True,
+        show_criticality: bool = False,
+        criticality_n: int = 1000,
+        criticality_seed: Optional[int] = None,
     ) -> matplotlib.figure.Figure:
         """Plot the task dependency graph using networkx.
 
@@ -529,6 +682,14 @@ class Project(Task):
             Font size for labels
         show_durations : bool
             Whether to show duration ranges on nodes
+        show_criticality : bool
+            Whether to color nodes by critical path frequency (default: False).
+            When True, nodes are colored on a gradient from green (rarely critical)
+            to red (always critical).
+        criticality_n : int
+            Number of simulations for criticality analysis (default: 1000)
+        criticality_seed : int, optional
+            Random seed for reproducible criticality analysis
 
         Returns
         -------
@@ -538,6 +699,8 @@ class Project(Task):
         Examples
         --------
         >>> project.plot_dependency_graph(save_path='dependency_graph.png')
+        >>> # Show criticality coloring
+        >>> project.plot_dependency_graph(show_criticality=True, criticality_n=5000)
         """
         # Create directed graph
         G = nx.DiGraph()
@@ -545,11 +708,8 @@ class Project(Task):
         # Add nodes with task information
         for task_id, task in self._tasks_dict.items():
             label = task.name or task_id[:8]
-            if show_durations:
-                if task.estimator == "triangular":
-                    duration_info = f"\n({task.min_duration}-{task.mode_duration}-{task.max_duration})"
-                else:
-                    duration_info = f"\n({task.min_duration}-{task.max_duration})"
+            if show_durations and task.distribution is not None:
+                duration_info = f"\n{task.distribution.get_display_params()}"
                 label += duration_info
             G.add_node(task_id, label=label)
 
@@ -574,41 +734,77 @@ class Project(Task):
                 # Final fallback to spring layout
                 pos = nx.spring_layout(G, k=2, iterations=50)
 
-        # Identify nodes by type
-        root_nodes = [n for n in G.nodes() if G.in_degree(n) == 0]
-        leaf_nodes = [n for n in G.nodes() if G.out_degree(n) == 0]
-        middle_nodes = [
-            n for n in G.nodes() if n not in root_nodes and n not in leaf_nodes
-        ]
+        # Get criticality data if requested
+        criticality_by_id: Dict[str, float] = {}
+        if show_criticality:
+            analysis = self.get_critical_path_analysis(
+                n=criticality_n, seed=criticality_seed
+            )
+            # Map task_id to frequency
+            for _task_name, data in analysis.items():
+                criticality_by_id[data["task_id"]] = data["frequency"]
 
-        # Draw nodes with different colors
-        if root_nodes:
-            nx.draw_networkx_nodes(
+        if show_criticality:
+            # Color nodes by criticality (green=0% to red=100%)
+            from matplotlib.colors import LinearSegmentedColormap
+
+            # Create green-yellow-red colormap
+            cmap = LinearSegmentedColormap.from_list(
+                "criticality", ["#90EE90", "#FFFF00", "#FF6B6B"]
+            )
+
+            # Get colors for each node based on criticality
+            node_colors = [criticality_by_id.get(n, 0.0) for n in G.nodes()]
+
+            nodes = nx.draw_networkx_nodes(
                 G,
                 pos,
-                nodelist=root_nodes,
-                node_color="lightgreen",
+                node_color=node_colors,
+                cmap=cmap,
+                vmin=0.0,
+                vmax=1.0,
                 node_size=node_size,
                 ax=ax,
             )
-        if middle_nodes:
-            nx.draw_networkx_nodes(
-                G,
-                pos,
-                nodelist=middle_nodes,
-                node_color="lightblue",
-                node_size=node_size,
-                ax=ax,
-            )
-        if leaf_nodes:
-            nx.draw_networkx_nodes(
-                G,
-                pos,
-                nodelist=leaf_nodes,
-                node_color="lightyellow",
-                node_size=node_size,
-                ax=ax,
-            )
+
+            # Add colorbar
+            cbar = plt.colorbar(nodes, ax=ax, shrink=0.8)
+            cbar.set_label("Critical Path Frequency", rotation=270, labelpad=20)
+        else:
+            # Original behavior: color by node type
+            root_nodes = [n for n in G.nodes() if G.in_degree(n) == 0]
+            leaf_nodes = [n for n in G.nodes() if G.out_degree(n) == 0]
+            middle_nodes = [
+                n for n in G.nodes() if n not in root_nodes and n not in leaf_nodes
+            ]
+
+            if root_nodes:
+                nx.draw_networkx_nodes(
+                    G,
+                    pos,
+                    nodelist=root_nodes,
+                    node_color="lightgreen",
+                    node_size=node_size,
+                    ax=ax,
+                )
+            if middle_nodes:
+                nx.draw_networkx_nodes(
+                    G,
+                    pos,
+                    nodelist=middle_nodes,
+                    node_color="lightblue",
+                    node_size=node_size,
+                    ax=ax,
+                )
+            if leaf_nodes:
+                nx.draw_networkx_nodes(
+                    G,
+                    pos,
+                    nodelist=leaf_nodes,
+                    node_color="lightyellow",
+                    node_size=node_size,
+                    ax=ax,
+                )
 
         # Draw edges
         nx.draw_networkx_edges(
@@ -625,18 +821,25 @@ class Project(Task):
         labels = nx.get_node_attributes(G, "label")
         nx.draw_networkx_labels(G, pos, labels, font_size=font_size, ax=ax)
 
-        ax.set_title(f"Task Dependencies: {self.name or 'Project'}")
+        if show_criticality:
+            ax.set_title(
+                f"Task Dependencies: {self.name or 'Project'}\n"
+                f"(Colored by critical path frequency, n={criticality_n})"
+            )
+        else:
+            ax.set_title(f"Task Dependencies: {self.name or 'Project'}")
         ax.axis("off")
 
-        # Add legend
-        from matplotlib.patches import Patch
+        # Add legend (only for non-criticality mode)
+        if not show_criticality:
+            from matplotlib.patches import Patch
 
-        legend_elements = [
-            Patch(facecolor="lightgreen", edgecolor="gray", label="Start Tasks"),
-            Patch(facecolor="lightblue", edgecolor="gray", label="Middle Tasks"),
-            Patch(facecolor="lightyellow", edgecolor="gray", label="End Tasks"),
-        ]
-        ax.legend(handles=legend_elements, loc="upper left")
+            legend_elements = [
+                Patch(facecolor="lightgreen", edgecolor="gray", label="Start Tasks"),
+                Patch(facecolor="lightblue", edgecolor="gray", label="Middle Tasks"),
+                Patch(facecolor="lightyellow", edgecolor="gray", label="End Tasks"),
+            ]
+            ax.legend(handles=legend_elements, loc="upper left")
 
         plt.tight_layout()
 

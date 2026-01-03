@@ -1,0 +1,10 @@
+project:
+  name: "Invalid Normal Distribution"
+  unit: "days"
+
+tasks:
+  review:
+    name: "Code Review"
+    estimator: "normal"
+    mean: 2.0
+    # Missing required 'std_dev' field

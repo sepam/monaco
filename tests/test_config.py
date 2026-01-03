@@ -116,16 +116,79 @@ class TestGetTemplateConfig:
         config = yaml.safe_load(template)
 
         assert len(config["tasks"]) > 0
-        # Check that tasks have required fields
+        # Check that tasks have required fields based on estimator type
         for _task_id, task_config in config["tasks"].items():
-            assert "min_duration" in task_config
-            assert "max_duration" in task_config
+            estimator = task_config.get("estimator", "triangular")
+            if estimator in ("normal", "lognormal"):
+                assert "mean" in task_config
+                assert "std_dev" in task_config
+            elif estimator == "beta":
+                assert "alpha" in task_config
+                assert "beta" in task_config
+                assert "max_value" in task_config
+            else:
+                # triangular, pert, uniform
+                assert "min_duration" in task_config
+                assert "max_duration" in task_config
 
     def test_template_has_seed_comment(self):
         """Test that template includes commented seed option."""
         template = get_template_config("Test")
         assert "# seed:" in template
         assert "reproducible" in template.lower()
+
+
+class TestNormalDistributionConfig:
+    """Tests for Normal distribution configuration."""
+
+    def test_load_config_with_normal(self):
+        """Test loading config with normal distribution."""
+        config = load_config(str(FIXTURES_DIR / "project_with_normal.yaml"))
+        assert "tasks" in config
+        # Check that normal estimator task exists
+        review_task = config["tasks"].get("review")
+        assert review_task is not None
+        assert review_task["estimator"] == "normal"
+        assert review_task["mean"] == 2.0
+        assert review_task["std_dev"] == 0.5
+
+    def test_build_project_with_normal(self):
+        """Test building project with normal distribution."""
+        config = load_config(str(FIXTURES_DIR / "project_with_normal.yaml"))
+        project = build_project_from_config(config)
+
+        # Should be able to run simulation
+        result = project.estimate()
+        assert result > 0
+
+    def test_build_project_with_normal_statistics(self):
+        """Test that project with normal distribution can generate statistics."""
+        config = load_config(str(FIXTURES_DIR / "project_with_normal.yaml"))
+        project = build_project_from_config(config)
+
+        stats = project.statistics(n=100)
+        assert "mean" in stats
+        assert stats["mean"] > 0
+
+    def test_missing_mean_raises_error(self):
+        """Test that missing mean parameter raises error."""
+        with pytest.raises(ConfigError) as excinfo:
+            load_config(str(FIXTURES_DIR / "invalid_normal_missing_mean.yaml"))
+        assert "mean" in str(excinfo.value).lower()
+
+    def test_missing_std_dev_raises_error(self):
+        """Test that missing std_dev parameter raises error."""
+        with pytest.raises(ConfigError) as excinfo:
+            load_config(str(FIXTURES_DIR / "invalid_normal_missing_std.yaml"))
+        assert "std_dev" in str(excinfo.value).lower()
+
+    def test_normal_with_bounds(self):
+        """Test loading normal distribution with bounds."""
+        config = load_config(str(FIXTURES_DIR / "project_with_normal.yaml"))
+        final_review = config["tasks"]["final_review"]
+
+        assert final_review["min_value"] == 0.5
+        assert final_review["max_value"] == 3.0
 
 
 class TestGetSeedFromConfig:

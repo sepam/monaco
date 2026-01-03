@@ -1,6 +1,15 @@
 """Minimal Project Task Forecasting."""
 
-# Import order matters: task must come before project to avoid circular imports
+# Import order matters: distributions -> task -> project to avoid circular imports
+from monaco.distributions import (  # noqa: E402, F401
+    BetaDistribution,
+    Distribution,
+    LogNormalDistribution,
+    NormalDistribution,
+    PERTDistribution,
+    TriangularDistribution,
+    UniformDistribution,
+)
 from monaco.task import *  # noqa: E402, F401
 from monaco.project import *  # noqa: E402, F401
 

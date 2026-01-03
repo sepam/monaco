@@ -498,3 +498,160 @@ def test_statistics_with_dependencies():
     assert stats["mean"] < 30  # Should be less than sum of all
     assert stats["median"] > 15
     assert stats["median"] < 30
+
+
+# ============================================================================
+# Critical Path Analysis Tests
+# ============================================================================
+
+
+def test_critical_path_simple_sequential():
+    """All tasks in a sequential chain should be 100% critical"""
+    task1 = Task(name="Task1", min_duration=5, mode_duration=5, max_duration=5)
+    task2 = Task(name="Task2", min_duration=3, mode_duration=3, max_duration=3)
+    task3 = Task(name="Task3", min_duration=2, mode_duration=2, max_duration=2)
+
+    p = Project(name="Sequential")
+    p.add_task(task1)
+    p.add_task(task2, depends_on=[task1])
+    p.add_task(task3, depends_on=[task2])
+
+    analysis = p.get_critical_path_analysis(n=100, seed=42)
+
+    # All tasks should be 100% critical in a sequential chain
+    assert analysis["Task1"]["frequency"] == 1.0
+    assert analysis["Task2"]["frequency"] == 1.0
+    assert analysis["Task3"]["frequency"] == 1.0
+
+
+def test_critical_path_parallel_branches_longer_wins():
+    """The longer parallel branch should be critical more often"""
+    # Short branch: 5 days fixed
+    short = Task(name="Short", min_duration=5, mode_duration=5, max_duration=5)
+    # Long branch: 10 days fixed
+    long_task = Task(name="Long", min_duration=10, mode_duration=10, max_duration=10)
+    # Final task depends on both
+    final = Task(name="Final", min_duration=1, mode_duration=1, max_duration=1)
+
+    p = Project(name="Parallel")
+    p.add_task(short)
+    p.add_task(long_task)
+    p.add_task(final, depends_on=[short, long_task])
+
+    analysis = p.get_critical_path_analysis(n=100, seed=42)
+
+    # Long task should always be critical (it's always longer)
+    assert analysis["Long"]["frequency"] == 1.0
+    # Short task should never be critical
+    assert analysis["Short"]["frequency"] == 0.0
+    # Final task is always on critical path
+    assert analysis["Final"]["frequency"] == 1.0
+
+
+def test_critical_path_equal_parallel_branches():
+    """Equal parallel branches should each be critical ~50% of the time"""
+    # Two branches with same distribution
+    branch_a = Task(name="BranchA", min_duration=5, mode_duration=10, max_duration=15)
+    branch_b = Task(name="BranchB", min_duration=5, mode_duration=10, max_duration=15)
+    final = Task(name="Final", min_duration=1, mode_duration=1, max_duration=1)
+
+    p = Project(name="Equal Parallel")
+    p.add_task(branch_a)
+    p.add_task(branch_b)
+    p.add_task(final, depends_on=[branch_a, branch_b])
+
+    analysis = p.get_critical_path_analysis(n=1000, seed=42)
+
+    # Both branches should be critical roughly 50% of the time
+    # Allow some variance due to randomness
+    assert 0.3 < analysis["BranchA"]["frequency"] < 0.7
+    assert 0.3 < analysis["BranchB"]["frequency"] < 0.7
+    # Final task is always critical
+    assert analysis["Final"]["frequency"] == 1.0
+
+
+def test_critical_path_no_dependencies():
+    """Without dependencies, all tasks are 'critical' (backward compat mode)"""
+    task1 = Task(name="Task1", min_duration=5, mode_duration=5, max_duration=5)
+    task2 = Task(name="Task2", min_duration=3, mode_duration=3, max_duration=3)
+
+    p = Project(name="No Deps")
+    p.add_task(task1)
+    p.add_task(task2)
+
+    analysis = p.get_critical_path_analysis(n=100, seed=42)
+
+    # All tasks should be 100% critical when no dependencies
+    assert analysis["Task1"]["frequency"] == 1.0
+    assert analysis["Task2"]["frequency"] == 1.0
+
+
+def test_critical_path_analysis_returns_correct_structure():
+    """Verify the structure of returned analysis data"""
+    task = Task(name="MyTask", min_duration=5, mode_duration=5, max_duration=5)
+
+    p = Project(name="Structure Test")
+    p.add_task(task)
+
+    analysis = p.get_critical_path_analysis(n=10, seed=42)
+
+    assert "MyTask" in analysis
+    assert "task_id" in analysis["MyTask"]
+    assert "count" in analysis["MyTask"]
+    assert "frequency" in analysis["MyTask"]
+    assert analysis["MyTask"]["count"] == 10
+    assert analysis["MyTask"]["frequency"] == 1.0
+
+
+def test_critical_path_complex_dag():
+    """Test a more complex DAG structure"""
+    #       A (2)
+    #      / \
+    #   B(5)  C(8)
+    #      \ /
+    #      D(3)
+    a = Task(name="A", min_duration=2, mode_duration=2, max_duration=2)
+    b = Task(name="B", min_duration=5, mode_duration=5, max_duration=5)
+    c = Task(name="C", min_duration=8, mode_duration=8, max_duration=8)
+    d = Task(name="D", min_duration=3, mode_duration=3, max_duration=3)
+
+    p = Project(name="Complex DAG")
+    p.add_task(a)
+    p.add_task(b, depends_on=[a])
+    p.add_task(c, depends_on=[a])
+    p.add_task(d, depends_on=[b, c])
+
+    analysis = p.get_critical_path_analysis(n=100, seed=42)
+
+    # A, C, D should be critical (A->C->D is longest path = 2+8+3 = 13)
+    # B is not critical (A->B->D = 2+5+3 = 10)
+    assert analysis["A"]["frequency"] == 1.0
+    assert analysis["C"]["frequency"] == 1.0
+    assert analysis["D"]["frequency"] == 1.0
+    assert analysis["B"]["frequency"] == 0.0
+
+
+def test_plot_dependency_graph_with_criticality(tmp_path):
+    """Test that plot_dependency_graph works with criticality coloring"""
+    import matplotlib
+
+    matplotlib.use("Agg")  # Non-interactive backend for testing
+
+    task1 = Task(name="Task1", min_duration=5, mode_duration=5, max_duration=5)
+    task2 = Task(name="Task2", min_duration=3, mode_duration=3, max_duration=3)
+
+    p = Project(name="Plot Test")
+    p.add_task(task1)
+    p.add_task(task2, depends_on=[task1])
+
+    # Test with criticality
+    save_path = tmp_path / "graph_criticality.png"
+    fig = p.plot_dependency_graph(
+        save_path=str(save_path),
+        show_criticality=True,
+        criticality_n=100,
+        criticality_seed=42,
+    )
+
+    assert save_path.exists()
+    assert fig is not None

@@ -1,0 +1,29 @@
+project:
+  name: "Project with Normal Distribution"
+  unit: "days"
+
+tasks:
+  planning:
+    name: "Planning"
+    min_duration: 1
+    mode_duration: 2
+    max_duration: 3
+    estimator: "triangular"
+
+  review:
+    name: "Code Review"
+    estimator: "normal"
+    mean: 2.0
+    std_dev: 0.5
+    depends_on:
+      - planning
+
+  final_review:
+    name: "Final Review"
+    estimator: "normal"
+    mean: 1.5
+    std_dev: 0.3
+    min_value: 0.5
+    max_value: 3.0
+    depends_on:
+      - review
