@@ -1,4 +1,58 @@
-"""Logic for creating Tasks."""
+"""
+Task module for representing individual work items with probabilistic durations.
+
+This module provides the Task class, which represents a single unit of work
+in a project. Each task has a duration modeled as a probability distribution,
+allowing for uncertainty in time estimates.
+
+Key Concepts
+------------
+A Task represents any discrete unit of work that needs to be completed:
+- A development feature
+- A testing phase
+- A meeting or review
+- Any activity with uncertain duration
+
+Tasks can be created in two ways:
+
+1. **Legacy style** (backward compatible): Specify min, mode, and max
+   durations with an estimator type.
+
+2. **Modern style**: Provide a Distribution object directly for full
+   control over the probability distribution.
+
+Relationship to Distributions
+-----------------------------
+Tasks delegate duration sampling to Distribution objects. The Task class
+provides a convenient wrapper that:
+- Generates unique task IDs
+- Tracks creation timestamps
+- Provides backward-compatible property access
+- Can be added to Project objects for simulation
+
+Example
+-------
+>>> from monaco import Task
+>>> # Legacy style: three-point estimate
+>>> task = Task(
+...     name="Development",
+...     min_duration=5,
+...     mode_duration=8,
+...     max_duration=15
+... )
+>>> # Sample a duration
+>>> duration = task.estimate()
+
+>>> # Modern style: use a Distribution object
+>>> from monaco import PERTDistribution
+>>> dist = PERTDistribution(minimum=5, mode=8, maximum=15)
+>>> task = Task(name="Development", distribution=dist)
+
+See Also
+--------
+Project : Container for multiple tasks with dependencies.
+distributions : Probability distribution classes.
+"""
 
 import uuid
 from datetime import datetime
@@ -12,6 +66,33 @@ from monaco.distributions import (
 
 
 class Task:
+    """A single task with probabilistic duration for Monte Carlo simulation.
+
+    Task is the fundamental building block for project planning in Monaco.
+    It represents a unit of work with uncertain duration, modeled as a
+    probability distribution.
+
+    Tasks can be combined into Projects to simulate complex workflows
+    with dependencies.
+
+    Attributes
+    ----------
+    task_id : str
+        Unique identifier (UUID) for the task.
+    cdate : datetime
+        Creation timestamp.
+    name : str or None
+        Human-readable name for the task.
+
+    Example
+    -------
+    >>> task = Task(name="Research", min_duration=2, mode_duration=5, max_duration=10)
+    >>> task.name
+    'Research'
+    >>> task.estimator
+    'triangular'
+    >>> duration = task.estimate()  # Sample from distribution
+    """
 
     def __init__(
         self,
@@ -101,19 +182,57 @@ class Task:
 
     @property
     def distribution(self) -> Optional[Distribution]:
-        """Get the distribution object."""
+        """The probability distribution for task duration.
+
+        Returns
+        -------
+        Distribution or None
+            The Distribution object used for sampling durations.
+            None if the task was created without duration parameters.
+
+        Example
+        -------
+        >>> task = Task(min_duration=5, mode_duration=8, max_duration=12)
+        >>> task.distribution.name
+        'triangular'
+        """
         return self._distribution
 
     @property
     def estimator(self) -> str:
-        """Get the estimator name (for backward compatibility)."""
+        """The distribution type name (for backward compatibility).
+
+        Returns
+        -------
+        str
+            Name of the distribution type (e.g., 'triangular', 'uniform').
+
+        Example
+        -------
+        >>> task = Task(min_duration=5, mode_duration=8, max_duration=12)
+        >>> task.estimator
+        'triangular'
+        """
         if self._distribution is not None:
             return self._distribution.name
         return self._estimator_hint
 
     @property
     def min_duration(self) -> Optional[float]:
-        """Get the minimum duration (for backward compatibility)."""
+        """The minimum duration value (for backward compatibility).
+
+        Returns
+        -------
+        float or None
+            Minimum duration if the distribution has a min_value attribute,
+            or the originally provided min_duration parameter.
+
+        Example
+        -------
+        >>> task = Task(min_duration=5, mode_duration=8, max_duration=12)
+        >>> task.min_duration
+        5
+        """
         if self._distribution is not None:
             if hasattr(self._distribution, "min_value"):
                 return self._distribution.min_value
@@ -121,7 +240,20 @@ class Task:
 
     @property
     def mode_duration(self) -> Optional[float]:
-        """Get the mode duration (for backward compatibility)."""
+        """The most likely duration value (for backward compatibility).
+
+        Returns
+        -------
+        float or None
+            Mode duration if the distribution has a mode_value attribute,
+            or the originally provided mode_duration parameter.
+
+        Example
+        -------
+        >>> task = Task(min_duration=5, mode_duration=8, max_duration=12)
+        >>> task.mode_duration
+        8
+        """
         if self._distribution is not None:
             if hasattr(self._distribution, "mode_value"):
                 return self._distribution.mode_value
@@ -129,25 +261,48 @@ class Task:
 
     @property
     def max_duration(self) -> Optional[float]:
-        """Get the maximum duration (for backward compatibility)."""
+        """The maximum duration value (for backward compatibility).
+
+        Returns
+        -------
+        float or None
+            Maximum duration if the distribution has a max_value attribute,
+            or the originally provided max_duration parameter.
+
+        Example
+        -------
+        >>> task = Task(min_duration=5, mode_duration=8, max_duration=12)
+        >>> task.max_duration
+        12
+        """
         if self._distribution is not None:
             if hasattr(self._distribution, "max_value"):
                 return self._distribution.max_value
         return self._max_duration
 
     def estimate(self) -> float:
-        """Estimate duration of a task by sampling from the distribution.
+        """Estimate duration by sampling from the task's distribution.
+
+        Each call returns a new random sample from the probability
+        distribution, representing one possible duration for the task.
 
         Returns
         -------
         float
-            An estimated duration sampled from the specified probability
-            distribution.
+            An estimated duration sampled from the probability distribution.
 
         Raises
         ------
         ValueError
-            If distribution is not configured.
+            If the task was created without duration parameters or
+            a Distribution object.
+
+        Example
+        -------
+        >>> task = Task(min_duration=5, mode_duration=8, max_duration=12)
+        >>> duration = task.estimate()
+        >>> 5 <= duration <= 12  # Within bounds
+        True
         """
         if self._distribution is None:
             raise ValueError(
