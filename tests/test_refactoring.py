@@ -332,7 +332,12 @@ class TestCleanImports:
         # BEFORE: FAIL (uses `from module import *`)
         # AFTER: PASS (uses explicit imports)
         """
-        init_path = "/home/user/monaco/src/monaco/__init__.py"
+        import os
+
+        # Get path relative to this test file
+        test_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.dirname(test_dir)
+        init_path = os.path.join(project_root, "src", "monaco", "__init__.py")
         with open(init_path) as f:
             content = f.read()
 
@@ -398,7 +403,8 @@ class TestTestImportConsistency:
         """
         import os
 
-        test_dir = "/home/user/monaco/tests"
+        # Get path relative to this test file
+        test_dir = os.path.dirname(os.path.abspath(__file__))
         issues = []
 
         # Pattern to search for (split to avoid self-detection)
@@ -480,9 +486,13 @@ class TestCoreRegressions:
 
         # BEFORE: PASS, AFTER: PASS
         """
+        import os
+
         from monaco.config import build_project_from_config, load_config
 
-        config_path = "/home/user/monaco/tests/fixtures/valid_project.yaml"
+        # Get path relative to this test file
+        test_dir = os.path.dirname(os.path.abspath(__file__))
+        config_path = os.path.join(test_dir, "fixtures", "valid_project.yaml")
         config = load_config(config_path)
         project = build_project_from_config(config)
 
