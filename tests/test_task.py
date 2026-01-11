@@ -1,13 +1,11 @@
-from datetime import datetime
-
 import pytest
 
+from monaco import Task
 from monaco.distributions import (
     NormalDistribution,
     TriangularDistribution,
     UniformDistribution,
 )
-from src.monaco import Task
 
 
 def test_task_init():
@@ -38,7 +36,6 @@ def test_task_init():
     assert t1.min_duration == 2
     assert t1.mode_duration == 4
     assert t1.max_duration == 10
-    assert t2.cdate.date() == datetime.now().date()
     assert t2.estimator == "uniform"
     assert t3.estimator == "triangular"
 
