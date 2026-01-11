@@ -1,3 +1,65 @@
+"""
+Project module for managing task collections with dependencies.
+
+This module provides the Project class, which extends Task to represent
+a collection of tasks that can have dependencies between them. Projects
+support Monte Carlo simulation for estimating completion times while
+accounting for uncertainty in task durations.
+
+Key Features
+------------
+- **Task dependency management**: Model complex workflows as a Directed
+  Acyclic Graph (DAG) where tasks can depend on other tasks.
+- **Critical path analysis**: Identify which tasks are most likely to
+  drive the project timeline across many simulations.
+- **Monte Carlo simulation**: Run thousands of simulations to understand
+  the probability distribution of project completion times.
+- **Statistical analysis**: Calculate mean, median, percentiles, and
+  confidence intervals for project duration.
+- **Visualization**: Generate histograms, cumulative distributions, and
+  dependency graphs.
+
+Architecture
+------------
+The Project class uses a Directed Acyclic Graph (DAG) to model task
+dependencies. When dependencies are specified, the critical path method
+(CPM) is used to calculate project duration:
+
+1. Tasks are topologically sorted to determine execution order
+2. Forward pass calculates earliest start/finish times
+3. Backward pass calculates latest start/finish times
+4. Slack (float) identifies critical tasks (slack = 0)
+
+Without dependencies, tasks are assumed to be sequential and durations
+are simply summed (backward compatibility mode).
+
+Example
+-------
+>>> from monaco import Project, Task
+>>>
+>>> # Create tasks with uncertainty
+>>> backend = Task(name="Backend", min_duration=10, mode_duration=15, max_duration=20)
+>>> frontend = Task(name="Frontend", min_duration=8, mode_duration=12, max_duration=15)
+>>> integration = Task(name="Integration", min_duration=2, mode_duration=3, max_duration=5)
+>>>
+>>> # Create project with dependencies
+>>> project = Project(name="Web App")
+>>> project.add_task(backend)
+>>> project.add_task(frontend)
+>>> project.add_task(integration, depends_on=[backend, frontend])
+>>>
+>>> # Run simulation
+>>> stats = project.statistics(n=10000)
+>>> print(f"Expected duration: {stats['mean']:.1f} days")
+>>> print(f"P85 estimate: {stats['percentiles']['p85']:.1f} days")
+
+See Also
+--------
+Task : Individual task with probabilistic duration.
+distributions : Probability distributions for modeling uncertainty.
+config : YAML configuration loading for project definitions.
+"""
+
 import csv
 import json
 import math
@@ -14,29 +76,97 @@ from monaco import Task
 
 
 class Project(Task):
+    """A collection of tasks with optional dependencies for Monte Carlo simulation.
+
+    Project extends Task to represent a container of multiple tasks that may
+    have dependencies between them. It provides methods for running Monte Carlo
+    simulations, calculating statistics, analyzing critical paths, and
+    visualizing results.
+
+    The Project class supports two modes of operation:
+
+    1. **Dependency mode**: When tasks have dependencies specified via
+       ``depends_on``, the critical path method is used. Parallel tasks
+       use max() duration, sequential tasks sum.
+
+    2. **Legacy mode**: When no dependencies are specified, all task
+       durations are simply summed (backward compatible behavior).
+
+    Attributes
+    ----------
+    name : str or None
+        Human-readable name for the project.
+    unit : str
+        Time unit for all durations (e.g., 'days', 'weeks', 'hours').
+    tasks : List[Task]
+        List of tasks in the project (read-only property).
+    dependencies : Dict[str, List[str]]
+        Mapping of task_id to list of dependency task_ids.
+
+    Example
+    -------
+    >>> from monaco import Project, Task
+    >>> project = Project(name="My Project", unit="days")
+    >>> task1 = Task(name="Research", min_duration=5, mode_duration=7, max_duration=14)
+    >>> task2 = Task(name="Development", min_duration=10, mode_duration=15, max_duration=25)
+    >>> project.add_task(task1)
+    >>> project.add_task(task2, depends_on=[task1])
+    >>> stats = project.statistics(n=10000)
+    >>> print(f"P85: {stats['percentiles']['p85']:.1f} {stats['unit']}")
+    """
 
     def __init__(self, name: Optional[str] = None, unit: str = "days") -> None:
-        """Project class
+        """Initialize a new Project.
 
         Parameters
         ----------
         name : str, optional
-            Name of the project
+            Human-readable name for the project. Used in exports and plots.
         unit : str, optional
             Time unit for all task durations (default: 'days').
-            Common values: 'days', 'weeks', 'hours', 'months'
+            Common values: 'days', 'weeks', 'hours', 'months'.
+            This is purely for labeling; no unit conversion is performed.
 
+        Note
+        ----
+        Project inherits from Task but does not use Task's duration properties.
+        The project's duration is calculated from its constituent tasks.
+
+        Example
+        -------
+        >>> project = Project(name="Website Redesign", unit="weeks")
         """
         super().__init__()
         self.name = name
         self.unit = unit
+        # Internal storage: task_id -> Task object for O(1) lookup
         self._tasks_dict: Dict[str, Task] = {}
+        # Dependency graph: task_id -> list of dependency task_ids
         self.dependencies: Dict[str, List[str]] = {}
-        self._task_order: List[str] = []  # Preserve insertion order for backward compat
+        # Preserve insertion order for backward compatibility with tasks property
+        self._task_order: List[str] = []
 
     @property
     def tasks(self) -> List[Task]:
-        """Get tasks as a list (for backward compatibility)."""
+        """Get all tasks in the project as an ordered list.
+
+        Returns tasks in the order they were added to the project.
+        This property provides backward compatibility with code that
+        expects ``project.tasks`` to be a list.
+
+        Returns
+        -------
+        List[Task]
+            Tasks in insertion order.
+
+        Example
+        -------
+        >>> project = Project()
+        >>> project.add_task(Task(name="A"))
+        >>> project.add_task(Task(name="B"))
+        >>> [t.name for t in project.tasks]
+        ['A', 'B']
+        """
         return [self._tasks_dict[tid] for tid in self._task_order]
 
     def add_task(self, task: Task, depends_on: Optional[List[Task]] = None) -> None:
@@ -92,33 +222,55 @@ class Project(Task):
                 self.dependencies[task.task_id] = []
 
     def _validate_dag(self) -> None:
-        """
-        Validate that the task graph is a valid DAG (no cycles).
+        """Validate that the task graph is a valid DAG (no cycles).
+
+        Uses depth-first search (DFS) with a recursion stack to detect cycles.
+        A cycle exists if we encounter a node that is already in the current
+        recursion stack (i.e., we've found a back edge).
+
+        Algorithm: DFS Cycle Detection
+        ------------------------------
+        1. Maintain two sets: 'visited' (all seen nodes) and 'rec_stack'
+           (nodes in current DFS path)
+        2. For each unvisited node, start DFS
+        3. Add node to both visited and rec_stack
+        4. For each neighbor (dependency):
+           - If not visited: recurse
+           - If in rec_stack: cycle found (back edge)
+        5. Remove node from rec_stack when backtracking
+
+        Time Complexity: O(V + E) where V = tasks, E = dependencies
 
         Raises
         ------
         ValueError
-            If a cycle is detected in the dependency graph
+            If a cycle is detected in the dependency graph.
         """
-        visited = set()
-        rec_stack = set()
+        # Track all visited nodes across all DFS traversals
+        visited: set = set()
+        # Track nodes in current DFS path (recursion stack)
+        rec_stack: set = set()
 
         def has_cycle(task_id: str) -> bool:
+            """DFS helper to detect cycles starting from task_id."""
             visited.add(task_id)
-            rec_stack.add(task_id)
+            rec_stack.add(task_id)  # Add to current path
 
-            # Check all dependencies
+            # Explore all dependencies (edges from this node)
             for dep_id in self.dependencies.get(task_id, []):
                 if dep_id not in visited:
+                    # Unvisited node: recurse
                     if has_cycle(dep_id):
                         return True
                 elif dep_id in rec_stack:
+                    # Node is in current path: back edge found = cycle!
                     return True
 
+            # Backtrack: remove from current path
             rec_stack.remove(task_id)
             return False
 
-        # Check all tasks for cycles
+        # Start DFS from each unvisited node (handles disconnected components)
         for task_id in self._tasks_dict:
             if task_id not in visited:
                 if has_cycle(task_id):
@@ -128,77 +280,122 @@ class Project(Task):
                     )
 
     def _topological_sort(self) -> List[str]:
-        """
-        Perform topological sort on the task graph.
+        """Perform topological sort on the task graph using Kahn's algorithm.
+
+        Returns tasks in an order where all dependencies come before their
+        dependents. This is required for the forward pass of critical path
+        calculation.
+
+        Algorithm: Kahn's Algorithm
+        ---------------------------
+        1. Calculate in-degree (number of dependencies) for each task
+        2. Add all tasks with in-degree 0 to a queue (no dependencies)
+        3. While queue is not empty:
+           a. Remove a task from queue and add to result
+           b. For each task that depends on the removed task:
+              - Decrement its in-degree
+              - If in-degree becomes 0, add to queue
+        4. Result contains tasks in topological order
+
+        Time Complexity: O(V + E) where V = tasks, E = dependencies
 
         Returns
         -------
         List[str]
-            List of task IDs in topological order (dependencies before dependents)
+            List of task IDs in topological order (dependencies before dependents).
+
+        Note
+        ----
+        This assumes the graph is a valid DAG (no cycles). Call _validate_dag()
+        before this method to ensure correctness.
         """
-        # in_degree counts how many dependencies each task has (incoming edges)
+        # Step 1: Calculate in-degree for each task
+        # in_degree[task_id] = number of tasks this task depends on
         in_degree = {
             task_id: len(self.dependencies.get(task_id, []))
             for task_id in self._tasks_dict
         }
 
-        # Queue of tasks with no dependencies (can start immediately)
+        # Step 2: Initialize queue with all tasks that have no dependencies
+        # These tasks can start immediately (in-degree = 0)
         queue = [task_id for task_id, degree in in_degree.items() if degree == 0]
         result = []
 
+        # Step 3: Process tasks in BFS order
         while queue:
-            # Process task with no dependencies
+            # Remove task with no remaining dependencies
             current = queue.pop(0)
             result.append(current)
 
-            # For each task that depends on current
+            # Update in-degrees for tasks that depend on current
+            # (current is now "complete", so dependents have one less dependency)
             for task_id in self._tasks_dict:
                 if current in self.dependencies.get(task_id, []):
                     in_degree[task_id] -= 1
+                    # If all dependencies are now satisfied, task can be scheduled
                     if in_degree[task_id] == 0:
                         queue.append(task_id)
 
         return result
 
     def _calculate_critical_path(self, task_durations: Dict[str, float]) -> float:
-        """
-        Calculate project duration using critical path method.
+        """Calculate project duration using the Critical Path Method (CPM).
 
-        For projects with dependencies, calculates the longest path through the graph.
-        Tasks in parallel take max() time, sequential tasks sum.
+        The critical path is the longest path through the dependency graph,
+        representing the minimum time needed to complete the project. This
+        method performs only the forward pass to find the project duration.
+
+        Algorithm: Forward Pass
+        -----------------------
+        1. Sort tasks topologically (dependencies before dependents)
+        2. For each task in order:
+           - If no dependencies: earliest_start = 0
+           - Otherwise: earliest_start = max(dependency completion times)
+        3. Project duration = max(all task completion times)
+
+        For parallel tasks (multiple paths to same endpoint), we take the
+        maximum completion time. For sequential tasks, durations effectively
+        sum along the path.
 
         Parameters
         ----------
         task_durations : Dict[str, float]
-            Mapping of task_id to duration for this simulation run
+            Mapping of task_id to sampled duration for this simulation run.
 
         Returns
         -------
         float
-            Total project duration considering dependencies
+            Total project duration (length of critical path).
+
+        See Also
+        --------
+        _get_critical_tasks_for_run : Also performs backward pass to identify
+            which specific tasks are on the critical path.
         """
         if not self._tasks_dict:
             return 0.0
 
-        # Get tasks in topological order
+        # Sort tasks so dependencies come before dependents
         sorted_tasks = self._topological_sort()
 
-        # Calculate earliest start time for each task
+        # Forward pass: calculate earliest start time for each task
+        # ES[task] = max(EF[dep] for dep in dependencies) where EF = ES + duration
         earliest_start: Dict[str, float] = {}
 
         for task_id in sorted_tasks:
             deps = self.dependencies.get(task_id, [])
             if not deps:
-                # No dependencies - can start immediately
+                # No dependencies: can start at time 0
                 earliest_start[task_id] = 0.0
             else:
-                # Start after all dependencies complete
+                # Must wait for all dependencies to complete
+                # Earliest start = latest finish time among dependencies
                 dep_completion_times = [
                     earliest_start[dep_id] + task_durations[dep_id] for dep_id in deps
                 ]
                 earliest_start[task_id] = max(dep_completion_times)
 
-        # Total duration = latest completion time
+        # Project duration = maximum completion time across all tasks
         completion_times = [
             earliest_start[tid] + task_durations[tid] for tid in sorted_tasks
         ]
@@ -207,69 +404,100 @@ class Project(Task):
     def _get_critical_tasks_for_run(
         self, task_durations: Dict[str, float]
     ) -> Tuple[set, float]:
-        """
-        Identify critical tasks for a single simulation run.
+        """Identify critical tasks for a single simulation run.
 
-        Uses forward and backward pass to calculate slack for each task.
-        Tasks with zero slack are on the critical path.
+        Performs both forward and backward passes to calculate slack (float)
+        for each task. Tasks with zero slack are on the critical path and
+        directly impact the project duration.
+
+        Algorithm: Critical Path Method (CPM)
+        -------------------------------------
+        **Forward Pass** (earliest times):
+        - ES (Earliest Start) = max(EF of all dependencies), or 0 if no deps
+        - EF (Earliest Finish) = ES + duration
+
+        **Backward Pass** (latest times):
+        - LF (Latest Finish) = min(LS of all dependents), or project_end if no dependents
+        - LS (Latest Start) = LF - duration
+
+        **Slack Calculation**:
+        - Slack = LS - ES = LF - EF
+        - Critical tasks have slack = 0 (no room for delay)
 
         Parameters
         ----------
         task_durations : Dict[str, float]
-            Mapping of task_id to duration for this simulation run
+            Mapping of task_id to sampled duration for this simulation run.
 
         Returns
         -------
         Tuple[set, float]
-            Set of task_ids on the critical path, and project duration
+            A tuple containing:
+            - Set of task_ids that are on the critical path
+            - Total project duration
         """
         if not self._tasks_dict:
             return set(), 0.0
 
-        # Get tasks in topological order
         sorted_tasks = self._topological_sort()
 
-        # === Forward Pass: Calculate earliest start/finish times ===
+        # =====================================================================
+        # FORWARD PASS: Calculate earliest start/finish times
+        # Process tasks in topological order (dependencies before dependents)
+        # =====================================================================
         earliest_start: Dict[str, float] = {}
         earliest_finish: Dict[str, float] = {}
 
         for task_id in sorted_tasks:
             deps = self.dependencies.get(task_id, [])
             if not deps:
+                # No dependencies: can start immediately at time 0
                 earliest_start[task_id] = 0.0
             else:
+                # Wait for all dependencies to complete
                 dep_completion_times = [earliest_finish[dep_id] for dep_id in deps]
                 earliest_start[task_id] = max(dep_completion_times)
+            # Finish = start + duration
             earliest_finish[task_id] = earliest_start[task_id] + task_durations[task_id]
 
-        # Project duration
+        # Project duration is when the last task finishes
         project_duration = max(earliest_finish.values()) if earliest_finish else 0.0
 
-        # === Build reverse dependency map (who depends on each task) ===
+        # =====================================================================
+        # BUILD REVERSE DEPENDENCY MAP
+        # dependents[task_id] = list of tasks that depend on task_id
+        # =====================================================================
         dependents: Dict[str, List[str]] = {tid: [] for tid in self._tasks_dict}
         for task_id, deps in self.dependencies.items():
             for dep_id in deps:
                 dependents[dep_id].append(task_id)
 
-        # === Backward Pass: Calculate latest start/finish times ===
+        # =====================================================================
+        # BACKWARD PASS: Calculate latest start/finish times
+        # Process tasks in reverse topological order (dependents before dependencies)
+        # =====================================================================
         latest_finish: Dict[str, float] = {}
         latest_start: Dict[str, float] = {}
 
         for task_id in reversed(sorted_tasks):
             task_dependents = dependents[task_id]
             if not task_dependents:
-                # No dependents - can finish at project end
+                # No dependents: can finish at project end (no constraint)
                 latest_finish[task_id] = project_duration
             else:
-                # Must finish before dependents start
+                # Must finish before the earliest start of any dependent
                 latest_finish[task_id] = min(
                     latest_start[dep_id] for dep_id in task_dependents
                 )
+            # Latest start = latest finish - duration
             latest_start[task_id] = latest_finish[task_id] - task_durations[task_id]
 
-        # === Identify critical tasks (slack ≈ 0) ===
+        # =====================================================================
+        # IDENTIFY CRITICAL TASKS: Slack = LS - ES ≈ 0
+        # Tasks with zero slack cannot be delayed without delaying the project
+        # =====================================================================
         critical_tasks = set()
-        tolerance = 1e-9  # Floating point tolerance
+        tolerance = 1e-9  # Floating point comparison tolerance
 
         for task_id in self._tasks_dict:
             slack = latest_start[task_id] - earliest_start[task_id]
@@ -279,7 +507,16 @@ class Project(Task):
         return critical_tasks, project_duration
 
     def _has_dependencies(self) -> bool:
-        """Check if any tasks have dependencies (non-empty dependency lists)."""
+        """Check if any tasks have explicit dependencies defined.
+
+        Used to determine whether to use critical path calculation (has
+        dependencies) or simple sum mode (no dependencies, backward compatible).
+
+        Returns
+        -------
+        bool
+            True if any task has at least one dependency, False otherwise.
+        """
         return any(deps for deps in self.dependencies.values())
 
     def estimate(self) -> float:
