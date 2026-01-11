@@ -1,7 +1,6 @@
 """Logic for creating Tasks."""
 
 import uuid
-from datetime import datetime
 from typing import Optional
 
 from monaco.distributions import (
@@ -68,7 +67,6 @@ class Task:
         >>> task = Task(name="Development", distribution=dist)
         """
         self.task_id = str(uuid.uuid4())
-        self.cdate = datetime.now()
         self.name = name
 
         # Validate estimator early (even if no distribution is created yet)

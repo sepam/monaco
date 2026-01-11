@@ -1,7 +1,6 @@
 import csv
 import json
 import math
-from collections import Counter
 from typing import Any, Dict, List, Optional, Tuple
 
 import matplotlib.figure
@@ -10,10 +9,11 @@ import networkx as nx
 import numpy as np
 import seaborn as sns
 
-from monaco import Task
+from monaco.task import Task
 
 
-class Project(Task):
+class Project:
+    """Project class for managing tasks and running Monte Carlo simulations."""
 
     def __init__(self, name: Optional[str] = None, unit: str = "days") -> None:
         """Project class
@@ -27,7 +27,6 @@ class Project(Task):
             Common values: 'days', 'weeks', 'hours', 'months'
 
         """
-        super().__init__()
         self.name = name
         self.unit = unit
         self._tasks_dict: Dict[str, Task] = {}
@@ -290,7 +289,7 @@ class Project(Task):
 
         Returns
         -------
-        p_est : float
+        float
             An estimated duration measured in units
         """
         # Sample duration for each task
@@ -300,29 +299,10 @@ class Project(Task):
 
         # Use critical path if dependencies exist, otherwise simple sum
         if self._has_dependencies():
-            self.p_est = self._calculate_critical_path(task_durations)
+            return self._calculate_critical_path(task_durations)
         else:
             # Backward compatible: simple sum for linear projects
-            self.p_est = sum(task_durations.values())
-
-        return self.p_est
-
-    def _simulate(self, n: int = 1000) -> Counter:
-        """Run a monte carlo simulation by simulating n estimation runs.
-
-        Parameters
-        ----------
-        n : int
-            Number of estimations to run in the simulation
-
-        Returns
-        -------
-        c : Counter() object
-            Counter with count of estimation occurences
-        """
-        sims = [self.estimate() for i in range(n)]
-        c = Counter(sims)
-        return c
+            return sum(task_durations.values())
 
     def _run_simulation(self, n: int = 1000) -> List[float]:
         """Internal method to run simulations and return raw results.
@@ -337,7 +317,53 @@ class Project(Task):
         List[float]
             List of simulation results
         """
-        return [self.estimate() for i in range(n)]
+        return [self.estimate() for _ in range(n)]
+
+    def _compute_statistics(self, sims: List[float]) -> Dict[str, Any]:
+        """Compute statistics from a list of simulation results.
+
+        Parameters
+        ----------
+        sims : List[float]
+            List of simulation results
+
+        Returns
+        -------
+        Dict[str, Any]
+            Statistics dictionary
+        """
+        sims_array = np.array(sims)
+
+        # Calculate percentiles
+        p10 = np.percentile(sims_array, 10)
+        p50 = np.percentile(sims_array, 50)
+        p85 = np.percentile(sims_array, 85)
+        p90 = np.percentile(sims_array, 90)
+        p95 = np.percentile(sims_array, 95)
+
+        # Calculate 95% confidence interval (mean ± 1.96 * std)
+        mean = np.mean(sims_array)
+        std = np.std(sims_array)
+        ci_95_lower = mean - 1.96 * std
+        ci_95_upper = mean + 1.96 * std
+
+        return {
+            "unit": self.unit,
+            "n_simulations": len(sims),
+            "mean": float(mean),
+            "median": float(p50),
+            "std_dev": float(std),
+            "min": float(np.min(sims_array)),
+            "max": float(np.max(sims_array)),
+            "percentiles": {
+                "p10": float(p10),
+                "p50": float(p50),
+                "p85": float(p85),
+                "p90": float(p90),
+                "p95": float(p95),
+            },
+            "confidence_intervals": {"95%": (float(ci_95_lower), float(ci_95_upper))},
+        }
 
     def statistics(self, n: int = 10000) -> Dict[str, Any]:
         """Calculate comprehensive statistics from Monte Carlo simulation.
@@ -369,38 +395,7 @@ class Project(Task):
         >>> print(f"P85: {stats['percentiles']['p85']:.1f} {stats['unit']}")
         """
         sims = self._run_simulation(n)
-        sims_array = np.array(sims)
-
-        # Calculate percentiles
-        p10 = np.percentile(sims_array, 10)
-        p50 = np.percentile(sims_array, 50)
-        p85 = np.percentile(sims_array, 85)
-        p90 = np.percentile(sims_array, 90)
-        p95 = np.percentile(sims_array, 95)
-
-        # Calculate 95% confidence interval (mean ± 1.96 * std)
-        mean = np.mean(sims_array)
-        std = np.std(sims_array)
-        ci_95_lower = mean - 1.96 * std
-        ci_95_upper = mean + 1.96 * std
-
-        return {
-            "unit": self.unit,
-            "n_simulations": n,
-            "mean": float(mean),
-            "median": float(p50),
-            "std_dev": float(std),
-            "min": float(np.min(sims_array)),
-            "max": float(np.max(sims_array)),
-            "percentiles": {
-                "p10": float(p10),
-                "p50": float(p50),
-                "p85": float(p85),
-                "p90": float(p90),
-                "p95": float(p95),
-            },
-            "confidence_intervals": {"95%": (float(ci_95_lower), float(ci_95_upper))},
-        }
+        return self._compute_statistics(sims)
 
     def get_critical_path_analysis(
         self, n: int = 10000, seed: Optional[int] = None
@@ -505,8 +500,9 @@ class Project(Task):
         if format not in ["json", "csv"]:
             raise ValueError(f"Invalid format '{format}'. Must be 'json' or 'csv'")
 
-        stats = self.statistics(n)
+        # Run simulations once and compute stats from the same data
         sims = self._run_simulation(n)
+        stats = self._compute_statistics(sims)
 
         if format == "json":
             # Export comprehensive JSON with stats and raw data

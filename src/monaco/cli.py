@@ -322,7 +322,7 @@ def _print_stats(project_name: Optional[str], stats: dict) -> None:
 
     click.secho("Percentiles:", bold=True)
     for key, value in stats["percentiles"].items():
-        label = key.upper().replace("P", "P")
+        label = key.upper()
         click.echo(f"  {label}:              {value:.1f} {stats['unit']}")
     click.echo()
 

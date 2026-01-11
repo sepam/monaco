@@ -1,5 +1,3 @@
-from collections import Counter
-
 import pytest
 
 from monaco import Project, Task
@@ -47,19 +45,19 @@ def test_project_estimate():
     p.add_task(t1)
     p.add_task(t2)
     est = p.estimate()
-    assert p.p_est
     assert est > 7
     assert isinstance(est, float)
 
 
-def test_project_simulate(n=1000):
+def test_project_run_simulation(n=1000):
     t1 = Task(name="Analysis", min_duration=2, mode_duration=3, max_duration=7)
     t2 = Task(name="Experiment", min_duration=30, mode_duration=35, max_duration=40)
     p = Project(name="High Score Bypass")
     p.add_task(t1)
     p.add_task(t2)
-    sim_runs = p._simulate(n=n)
-    assert isinstance(sim_runs, Counter)
+    sim_runs = p._run_simulation(n=n)
+    assert isinstance(sim_runs, list)
+    assert len(sim_runs) == n
 
 
 def test_plot_hist(n=100):

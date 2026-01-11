@@ -15,7 +15,6 @@ Usage:
 
 import pytest
 
-
 # ============================================================================
 # ITEM 1: Project should NOT inherit from Task
 # ============================================================================
@@ -255,7 +254,7 @@ class TestExportResultsEfficiency:
             call_count += 1
             return original_estimate()
 
-        with tempfile.NamedTemporaryFile(suffix=".json", delete=True) as tmp:
+        with tempfile.NamedTemporaryFile(suffix=".json", delete=True) as tmp:  # noqa: SIM117
             with patch.object(p, "estimate", side_effect=counting_estimate):
                 p.export_results(n=n, format="json", output=tmp.name)
 
@@ -279,9 +278,7 @@ class TestExportResultsEfficiency:
         t = Task(name="Task", min_duration=1, mode_duration=2, max_duration=3)
         p.add_task(t)
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False
-        ) as tmp:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as tmp:
             tmp_path = tmp.name
 
         p.export_results(n=100, format="json", output=tmp_path)
@@ -316,9 +313,9 @@ class TestNoOpCodeRemoval:
         # Get the source code of cli module
         source = inspect.getsource(cli)
 
-        assert '.replace("P", "P")' not in source and ".replace('P', 'P')" not in source, (
-            "Found useless .replace('P', 'P') in cli.py - this does nothing and should be removed"
-        )
+        assert (
+            '.replace("P", "P")' not in source and ".replace('P', 'P')" not in source
+        ), "Found useless .replace('P', 'P') in cli.py - this does nothing and should be removed"
 
 
 # ============================================================================
@@ -352,9 +349,9 @@ class TestCleanImports:
         """
         import monaco
 
-        assert hasattr(monaco, "__all__"), (
-            "monaco module should define __all__ to explicitly declare public API"
-        )
+        assert hasattr(
+            monaco, "__all__"
+        ), "monaco module should define __all__ to explicitly declare public API"
 
     def test_public_api_accessible(self):
         """Regression: All expected public classes should be importable.
@@ -404,12 +401,19 @@ class TestTestImportConsistency:
         test_dir = "/home/user/monaco/tests"
         issues = []
 
+        # Pattern to search for (split to avoid self-detection)
+        bad_import = "from " + "src.monaco"
+        bad_import2 = "import " + "src.monaco"
+
         for filename in os.listdir(test_dir):
             if filename.startswith("test_") and filename.endswith(".py"):
+                # Skip this file (it contains the patterns in string literals)
+                if filename == "test_refactoring.py":
+                    continue
                 filepath = os.path.join(test_dir, filename)
                 with open(filepath) as f:
                     content = f.read()
-                if "from src.monaco" in content or "import src.monaco" in content:
+                if bad_import in content or bad_import2 in content:
                     issues.append(filename)
 
         assert not issues, (
@@ -445,9 +449,7 @@ class TestCoreRegressions:
             name="Develop",
             distribution=PERTDistribution(min_value=5, mode_value=8, max_value=15),
         )
-        test_task = Task(
-            name="Test", min_duration=2, mode_duration=3, max_duration=5
-        )
+        test_task = Task(name="Test", min_duration=2, mode_duration=3, max_duration=5)
 
         # Add tasks with dependencies
         project.add_task(design)
