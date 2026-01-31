@@ -687,3 +687,119 @@ class TestCreateDistributionNewTypes:
         with pytest.raises(ValueError) as excinfo:
             create_distribution(estimator="beta", alpha=2.0, beta=2.0)
         assert "requires" in str(excinfo.value)
+
+
+class TestDistributionRoundTrip:
+    """Tests that to_dict() -> create_distribution() produces equivalent distributions.
+
+    This verifies the serialization/deserialization round-trip that underpins
+    YAML config save and load.
+    """
+
+    def test_triangular_round_trip(self):
+        original = TriangularDistribution(2.0, 5.0, 12.0)
+        d = original.to_dict()
+        restored = create_distribution(estimator=d.pop("type"), **d)
+        assert isinstance(restored, TriangularDistribution)
+        assert restored.min_value == original.min_value
+        assert restored.mode_value == original.mode_value
+        assert restored.max_value == original.max_value
+
+    def test_uniform_round_trip(self):
+        original = UniformDistribution(3.0, 9.0)
+        d = original.to_dict()
+        restored = create_distribution(estimator=d.pop("type"), **d)
+        assert isinstance(restored, UniformDistribution)
+        assert restored.min_value == original.min_value
+        assert restored.max_value == original.max_value
+
+    def test_normal_round_trip_minimal(self):
+        """Normal distribution with default bounds (no min_value/max_value in dict)."""
+        original = NormalDistribution(mean=7.0, std_dev=2.0)
+        d = original.to_dict()
+        restored = create_distribution(estimator=d.pop("type"), **d)
+        assert isinstance(restored, NormalDistribution)
+        assert restored.mean == original.mean
+        assert restored.std_dev == original.std_dev
+        assert restored.min_value == 0.0
+        assert restored.max_value is None
+
+    def test_normal_round_trip_with_bounds(self):
+        """Normal distribution with explicit bounds survives round-trip."""
+        original = NormalDistribution(mean=7.0, std_dev=2.0, min_value=3.0, max_value=11.0)
+        d = original.to_dict()
+        restored = create_distribution(estimator=d.pop("type"), **d)
+        assert isinstance(restored, NormalDistribution)
+        assert restored.mean == original.mean
+        assert restored.std_dev == original.std_dev
+        assert restored.min_value == original.min_value
+        assert restored.max_value == original.max_value
+
+    def test_pert_round_trip_default_lamb(self):
+        """PERT with default lamb=4 (not serialized) round-trips correctly."""
+        original = PERTDistribution(1.0, 4.0, 10.0)
+        d = original.to_dict()
+        assert "lamb" not in d  # default is omitted
+        restored = create_distribution(estimator=d.pop("type"), **d)
+        assert isinstance(restored, PERTDistribution)
+        assert restored.min_value == original.min_value
+        assert restored.mode_value == original.mode_value
+        assert restored.max_value == original.max_value
+        assert restored.lamb == 4.0
+
+    def test_pert_round_trip_custom_lamb(self):
+        """PERT with non-default lamb survives round-trip."""
+        original = PERTDistribution(1.0, 4.0, 10.0, lamb=6.0)
+        d = original.to_dict()
+        assert d["lamb"] == 6.0
+        restored = create_distribution(estimator=d.pop("type"), **d)
+        assert isinstance(restored, PERTDistribution)
+        assert restored.min_value == original.min_value
+        assert restored.mode_value == original.mode_value
+        assert restored.max_value == original.max_value
+        assert restored.lamb == 6.0
+
+    def test_lognormal_round_trip_minimal(self):
+        """LogNormal with default bounds round-trips correctly."""
+        original = LogNormalDistribution(mean=8.0, std_dev=3.0)
+        d = original.to_dict()
+        restored = create_distribution(estimator=d.pop("type"), **d)
+        assert isinstance(restored, LogNormalDistribution)
+        assert restored.mean == original.mean
+        assert restored.std_dev == original.std_dev
+        assert restored.min_value == 0.0
+        assert restored.max_value is None
+
+    def test_lognormal_round_trip_with_bounds(self):
+        """LogNormal with explicit bounds survives round-trip."""
+        original = LogNormalDistribution(mean=8.0, std_dev=3.0, min_value=2.0, max_value=20.0)
+        d = original.to_dict()
+        restored = create_distribution(estimator=d.pop("type"), **d)
+        assert isinstance(restored, LogNormalDistribution)
+        assert restored.mean == original.mean
+        assert restored.std_dev == original.std_dev
+        assert restored.min_value == original.min_value
+        assert restored.max_value == original.max_value
+
+    def test_beta_round_trip(self):
+        original = BetaDistribution(alpha=2.0, beta=5.0, min_value=1.0, max_value=15.0)
+        d = original.to_dict()
+        restored = create_distribution(estimator=d.pop("type"), **d)
+        assert isinstance(restored, BetaDistribution)
+        assert restored.alpha == original.alpha
+        assert restored.beta == original.beta
+        assert restored.min_value == original.min_value
+        assert restored.max_value == original.max_value
+
+    def test_round_trip_samples_match(self):
+        """Verify that a round-tripped distribution produces the same samples."""
+        original = TriangularDistribution(1.0, 5.0, 10.0)
+        d = original.to_dict()
+        restored = create_distribution(estimator=d.pop("type"), **d)
+
+        random.seed(99)
+        original_samples = [original.sample() for _ in range(50)]
+        random.seed(99)
+        restored_samples = [restored.sample() for _ in range(50)]
+
+        assert original_samples == restored_samples
