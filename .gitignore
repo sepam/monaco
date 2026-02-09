@@ -2,6 +2,10 @@
 /venv/
 /src/monaco.egg-info/
 
+# OS / IDE
+.DS_Store
+.idea/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
