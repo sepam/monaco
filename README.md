@@ -5,14 +5,20 @@
 
   **Probabilistic Project Planning with Monte Carlo Simulation**
 
-  [![License](https://img.shields.io/github/license/sepam/monaco?style=flat-square)](LICENSE)
-  [![Python](https://img.shields.io/badge/python-3.7+-blue.svg?style=flat-square)](https://www.python.org)
+  [![PyPI](https://img.shields.io/pypi/v/monaco?style=flat-square)](https://pypi.org/project/monaco/)
+  [![Python](https://img.shields.io/badge/python-3.8+-blue.svg?style=flat-square)](https://www.python.org)
+  [![License](https://img.shields.io/github/license/sepam/monaco?style=flat-square)](LICENSE.md)
+  ![Status](https://img.shields.io/badge/status-alpha-orange?style=flat-square)
 
   <p align="center">
+    <a href="#why-monaco">Why Monaco?</a> •
     <a href="#features">Features</a> •
     <a href="#installation">Installation</a> •
     <a href="#quick-start">Quick Start</a> •
-    <a href="#monte-carlo-simulation">Monte Carlo</a>
+    <a href="#monte-carlo-simulation">Monte Carlo</a> •
+    <a href="#command-line-interface">CLI</a> •
+    <a href="#probability-distributions">Distributions</a> •
+    <a href="#contributing">Contributing</a>
   </p>
 </div>
 
@@ -23,6 +29,8 @@
 Estimating the time it takes to complete a task or project is hard. Traditional approaches use fixed estimates, but this ignores any uncertainty and life often gets in the way.
 
 **Monaco helps you make better estimates by modeling tasks as random processes**, accounting for uncertainty and task dependencies through Monte Carlo simulation.
+
+> **Status:** Monaco is in **alpha** (v0.1.2). The public API may still change between releases.
 
 ## Features
 
@@ -55,10 +63,10 @@ from monaco import Task
 
 task = Task(
     name='Develop Feature',
-    min_duration=3,  
+    min_duration=3,
     mode_duration=5,  # most likely estimate
-    max_duration=9,  
-    estimator='triangular'  
+    max_duration=9,
+    estimator='triangular'
 )
 ```
 
@@ -110,6 +118,22 @@ stats = project.statistics(n=10000)
 print(f"Median completion time: {stats['median']:.1f} days")
 print(f"90% confidence: {stats['percentiles']['p90']:.1f} days")
 print(f"95% confidence: {stats['percentiles']['p95']:.1f} days")
+```
+
+`statistics()` returns a dictionary with the full distribution summary:
+
+```python
+{
+    'n_simulations': 10000,
+    'unit': 'days',
+    'mean': 18.4,
+    'median': 18.1,
+    'std_dev': 2.7,
+    'min': 11.2,
+    'max': 29.8,
+    'percentiles': {'p50': 18.1, 'p75': 20.1, 'p85': 21.3, 'p90': 22.1, 'p95': 23.4, 'p99': 25.6},
+    'confidence_intervals': {'95%': (13.5, 24.2)},
+}
 ```
 
 ### Visualize Results
@@ -270,7 +294,81 @@ task = Task(
 | Risk of delays/blockers | LogNormal |
 | Custom uncertainty profile | Beta |
 
-**New to Monte Carlo?** Start with **PERT** - it's the industry standard and works well for most project estimation tasks
+**New to Monte Carlo?** Start with **PERT** - it's the industry standard and works well for most project estimation tasks.
+
+---
+
+## Command Line Interface
+
+Monaco also ships with a `monaco` CLI that runs simulations from a YAML project file — useful for CI pipelines, shared team configs, and version-controlled estimates.
+
+```bash
+monaco init project.yaml                 # Create a template config
+monaco stats project.yaml -n 10000       # Print formatted statistics
+monaco run project.yaml -o results.json  # Export results (json or csv)
+monaco plot project.yaml -o chart.png    # Histogram or cumulative plot
+monaco graph project.yaml                # Visualize the task dependency graph
+```
+
+Example YAML config:
+
+```yaml
+project:
+  name: Website Redesign
+  unit: days
+  seed: 42  # optional, for reproducible runs
+
+tasks:
+  - name: Design
+    distribution:
+      type: pert
+      minimum: 5
+      mode: 7
+      maximum: 14
+
+  - name: Development
+    depends_on: [Design]
+    distribution:
+      type: triangular
+      minimum: 10
+      mode: 15
+      maximum: 25
+```
+
+Run `monaco --help` or `monaco <command> --help` to see all available options, including `--seed` for reproducible results and `-p/--percentile` markers for plots.
+
+---
+
+## Example
+
+A complete, runnable example lives in [`example/example_project.py`](example/example_project.py), with an annotated walkthrough in [`example/example.ipynb`](example/example.ipynb).
+
+```bash
+python example/example_project.py
+```
+
+---
+
+## Contributing
+
+Contributions are welcome! To set up a development environment:
+
+```bash
+git clone https://github.com/sepam/monaco.git
+cd monaco
+pip install -e ".[dev]"
+```
+
+Run the checks before submitting a PR:
+
+```bash
+pytest             # run the test suite
+ruff check .       # lint
+black .            # format
+mypy src           # type-check
+```
+
+Please open an issue to discuss larger changes before starting work.
 
 ---
 
