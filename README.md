@@ -5,7 +5,6 @@
 
   **Probabilistic Project Planning with Monte Carlo Simulation**
 
-  [![PyPI](https://img.shields.io/pypi/v/monaco?style=flat-square)](https://pypi.org/project/monaco/)
   [![Python](https://img.shields.io/badge/python-3.8+-blue.svg?style=flat-square)](https://www.python.org)
   [![License](https://img.shields.io/github/license/sepam/monaco?style=flat-square)](LICENSE.md)
   ![Status](https://img.shields.io/badge/status-alpha-orange?style=flat-square)
@@ -46,8 +45,12 @@ Estimating the time it takes to complete a task or project is hard. Traditional 
 
 ## Installation
 
+Install from source:
+
 ```bash
-pip install monaco
+git clone https://github.com/sepam/monaco.git
+cd monaco
+pip install .
 ```
 
 ---
