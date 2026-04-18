@@ -223,3 +223,233 @@ class TestGetSeedFromConfig:
         result2 = project.estimate()
 
         assert result1 == result2
+
+
+def _write_yaml(tmp_path, content: str) -> str:
+    """Helper: write YAML content to a temp file and return its path."""
+    path = tmp_path / "config.yaml"
+    path.write_text(content)
+    return str(path)
+
+
+class TestValidationEdgeCases:
+    """Edge-case tests for _validate_config covering branches not exercised
+    by the fixture-based tests."""
+
+    def test_empty_yaml_raises(self, tmp_path):
+        """An empty YAML file parses to None and must be rejected."""
+        path = _write_yaml(tmp_path, "")
+        with pytest.raises(ConfigError) as excinfo:
+            load_config(path)
+        assert "empty" in str(excinfo.value).lower()
+
+    def test_missing_project_section_raises(self, tmp_path):
+        path = _write_yaml(
+            tmp_path,
+            """
+tasks:
+  a:
+    min_duration: 1
+    mode_duration: 2
+    max_duration: 3
+""",
+        )
+        with pytest.raises(ConfigError) as excinfo:
+            load_config(path)
+        assert "project" in str(excinfo.value).lower()
+
+    def test_empty_tasks_dict_raises(self, tmp_path):
+        path = _write_yaml(
+            tmp_path,
+            """
+project:
+  name: "Empty"
+tasks: {}
+""",
+        )
+        with pytest.raises(ConfigError) as excinfo:
+            load_config(path)
+        assert "at least one task" in str(excinfo.value).lower()
+
+    def test_null_task_config_raises(self, tmp_path):
+        path = _write_yaml(
+            tmp_path,
+            """
+project:
+  name: "Null Task"
+tasks:
+  broken:
+""",
+        )
+        with pytest.raises(ConfigError) as excinfo:
+            load_config(path)
+        assert "broken" in str(excinfo.value)
+
+    def test_unknown_estimator_raises(self, tmp_path):
+        path = _write_yaml(
+            tmp_path,
+            """
+project:
+  name: "Bad Estimator"
+tasks:
+  a:
+    estimator: "magic"
+    min_duration: 1
+    max_duration: 2
+""",
+        )
+        with pytest.raises(ConfigError) as excinfo:
+            load_config(path)
+        assert "magic" in str(excinfo.value)
+
+    def test_triangular_missing_min_duration_raises(self, tmp_path):
+        path = _write_yaml(
+            tmp_path,
+            """
+project:
+  name: "Missing min"
+tasks:
+  a:
+    estimator: "triangular"
+    mode_duration: 2
+    max_duration: 3
+""",
+        )
+        with pytest.raises(ConfigError) as excinfo:
+            load_config(path)
+        assert "min_duration" in str(excinfo.value)
+
+    def test_triangular_missing_max_duration_raises(self, tmp_path):
+        path = _write_yaml(
+            tmp_path,
+            """
+project:
+  name: "Missing max"
+tasks:
+  a:
+    estimator: "triangular"
+    min_duration: 1
+    mode_duration: 2
+""",
+        )
+        with pytest.raises(ConfigError) as excinfo:
+            load_config(path)
+        assert "max_duration" in str(excinfo.value)
+
+    def test_pert_missing_mode_duration_raises(self, tmp_path):
+        path = _write_yaml(
+            tmp_path,
+            """
+project:
+  name: "PERT missing mode"
+tasks:
+  a:
+    estimator: "pert"
+    min_duration: 1
+    max_duration: 5
+""",
+        )
+        with pytest.raises(ConfigError) as excinfo:
+            load_config(path)
+        assert "mode_duration" in str(excinfo.value)
+
+    def test_beta_missing_alpha_raises(self, tmp_path):
+        path = _write_yaml(
+            tmp_path,
+            """
+project:
+  name: "Beta missing alpha"
+tasks:
+  a:
+    estimator: "beta"
+    beta: 2
+    max_value: 10
+""",
+        )
+        with pytest.raises(ConfigError) as excinfo:
+            load_config(path)
+        assert "alpha" in str(excinfo.value)
+
+    def test_beta_missing_beta_raises(self, tmp_path):
+        path = _write_yaml(
+            tmp_path,
+            """
+project:
+  name: "Beta missing beta"
+tasks:
+  a:
+    estimator: "beta"
+    alpha: 2
+    max_value: 10
+""",
+        )
+        with pytest.raises(ConfigError) as excinfo:
+            load_config(path)
+        assert "beta" in str(excinfo.value)
+
+    def test_beta_missing_max_value_raises(self, tmp_path):
+        path = _write_yaml(
+            tmp_path,
+            """
+project:
+  name: "Beta missing max_value"
+tasks:
+  a:
+    estimator: "beta"
+    alpha: 2
+    beta: 2
+""",
+        )
+        with pytest.raises(ConfigError) as excinfo:
+            load_config(path)
+        assert "max_value" in str(excinfo.value)
+
+    def test_lognormal_missing_mean_raises(self, tmp_path):
+        path = _write_yaml(
+            tmp_path,
+            """
+project:
+  name: "LogNormal missing mean"
+tasks:
+  a:
+    estimator: "lognormal"
+    std_dev: 1.0
+""",
+        )
+        with pytest.raises(ConfigError) as excinfo:
+            load_config(path)
+        assert "mean" in str(excinfo.value).lower()
+
+    def test_lognormal_missing_std_dev_raises(self, tmp_path):
+        path = _write_yaml(
+            tmp_path,
+            """
+project:
+  name: "LogNormal missing std_dev"
+tasks:
+  a:
+    estimator: "lognormal"
+    mean: 5.0
+""",
+        )
+        with pytest.raises(ConfigError) as excinfo:
+            load_config(path)
+        assert "std_dev" in str(excinfo.value).lower()
+
+    def test_uniform_accepts_missing_mode_duration(self, tmp_path):
+        """Uniform doesn't need mode_duration; it should validate fine."""
+        path = _write_yaml(
+            tmp_path,
+            """
+project:
+  name: "Uniform ok"
+tasks:
+  a:
+    estimator: "uniform"
+    min_duration: 1
+    max_duration: 5
+""",
+        )
+        # No exception
+        config = load_config(path)
+        assert "a" in config["tasks"]

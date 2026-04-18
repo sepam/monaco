@@ -653,3 +653,196 @@ def test_plot_dependency_graph_with_criticality(tmp_path):
 
     assert save_path.exists()
     assert fig is not None
+
+
+# ============================================================================
+# Project-level statistical correctness
+# ============================================================================
+#
+# These tests verify that Monte Carlo simulation produces results that match
+# analytical expectations for known distributions and dependency graphs. They
+# guard against regressions in _calculate_critical_path, _run_simulation,
+# and _compute_statistics.
+# ----------------------------------------------------------------------------
+
+
+def test_sequential_sum_matches_analytical_mean():
+    """Two sequential uniform(0, 10) tasks: E[total] = 10.0
+
+    No dependencies declared, so Project falls back to simple-sum mode.
+    """
+    import random
+
+    random.seed(42)
+    from monaco.distributions import UniformDistribution
+
+    p = Project(name="Sequential Mean")
+    p.add_task(Task(name="A", distribution=UniformDistribution(0.0, 10.0)))
+    p.add_task(Task(name="B", distribution=UniformDistribution(0.0, 10.0)))
+
+    stats = p.statistics(n=20000)
+    # E[U(0,10) + U(0,10)] = 10.0; std ≈ sqrt(2 * 100/12) ≈ 4.08
+    assert 9.8 <= stats["mean"] <= 10.2
+    assert stats["min"] >= 0.0
+    assert stats["max"] <= 20.0
+
+
+def test_parallel_max_matches_analytical_mean():
+    """Diamond with parallel uniform(0, 1) middle tasks.
+
+    start -> {a, b} -> end, where start = end = 0 durations is not
+    possible (min >= 0 is enforced but a deterministic "1.0 duration"
+    task works). With start = 0, end = 0 we just measure max(a, b).
+    Here we use fixed start/end durations and verify the parallel max.
+
+    For U(0, 1), E[max(a, b)] = 2/3.
+    """
+    import random
+
+    random.seed(123)
+    from monaco.distributions import UniformDistribution
+
+    p = Project(name="Parallel Max")
+    start = Task(name="S", distribution=UniformDistribution(0.0, 0.0))
+    a = Task(name="A", distribution=UniformDistribution(0.0, 1.0))
+    b = Task(name="B", distribution=UniformDistribution(0.0, 1.0))
+    end = Task(name="E", distribution=UniformDistribution(0.0, 0.0))
+
+    p.add_task(start)
+    p.add_task(a, depends_on=[start])
+    p.add_task(b, depends_on=[start])
+    p.add_task(end, depends_on=[a, b])
+
+    stats = p.statistics(n=20000)
+    # E[max(U(0,1), U(0,1))] = 2/3 ≈ 0.6667
+    assert 0.64 <= stats["mean"] <= 0.70
+
+
+def test_percentiles_are_monotonic():
+    """P10 <= median <= P85 <= P90 <= P95 must always hold."""
+    import random
+
+    random.seed(7)
+    p = Project(name="Monotonic")
+    p.add_task(Task(name="X", min_duration=1, mode_duration=5, max_duration=20))
+    stats = p.statistics(n=5000)
+    pcts = stats["percentiles"]
+    assert pcts["p10"] <= stats["median"] <= pcts["p85"] <= pcts["p90"] <= pcts["p95"]
+    assert stats["min"] <= pcts["p10"]
+    assert pcts["p95"] <= stats["max"]
+
+
+def test_statistics_reproducibility_with_seed():
+    """Seeding the same starting state must produce identical stats dicts."""
+    import random
+
+    p = Project(name="Seeded")
+    p.add_task(Task(name="X", min_duration=1, mode_duration=2, max_duration=5))
+    p.add_task(Task(name="Y", min_duration=2, mode_duration=3, max_duration=6))
+
+    random.seed(999)
+    stats1 = p.statistics(n=2000)
+    random.seed(999)
+    stats2 = p.statistics(n=2000)
+
+    assert stats1 == stats2
+
+
+def test_json_export_round_trips_with_statistics():
+    """JSON export must contain the exact statistics that statistics() returns
+    for the same simulation count.
+
+    Note: export_results runs its own simulation internally; with identical
+    seeds before each call the two runs should produce the same numbers.
+    """
+    import json
+    import random
+    import tempfile
+
+    p = Project(name="Export Integrity", unit="days")
+    p.add_task(Task(name="X", min_duration=1, mode_duration=2, max_duration=3))
+    p.add_task(Task(name="Y", min_duration=2, mode_duration=3, max_duration=4))
+
+    random.seed(314)
+    stats_ref = p.statistics(n=1000)
+
+    random.seed(314)
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+        out_path = f.name
+    p.export_results(n=1000, format="json", output=out_path)
+
+    with open(out_path) as f:
+        exported = json.load(f)
+
+    assert exported["project_name"] == "Export Integrity"
+    assert exported["unit"] == "days"
+    assert len(exported["simulations"]) == 1000
+
+    # Compare numerically (JSON round-trips tuples as lists, so we can't
+    # use a direct dict equality check on the full stats dict).
+    stats_exported = exported["statistics"]
+    for key in ("mean", "median", "std_dev", "min", "max", "n_simulations"):
+        assert stats_exported[key] == stats_ref[key]
+    for pkey in ("p10", "p50", "p85", "p90", "p95"):
+        assert stats_exported["percentiles"][pkey] == stats_ref["percentiles"][pkey]
+    ci_exp = stats_exported["confidence_intervals"]["95%"]
+    ci_ref = stats_ref["confidence_intervals"]["95%"]
+    assert list(ci_exp) == list(ci_ref)
+
+
+def test_csv_export_simulation_row_count():
+    """CSV export must contain exactly n simulation data rows."""
+    import csv
+    import tempfile
+
+    p = Project(name="CSV rows")
+    p.add_task(Task(name="X", min_duration=1, mode_duration=2, max_duration=3))
+
+    n = 500
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
+        out_path = f.name
+    p.export_results(n=n, format="csv", output=out_path)
+
+    with open(out_path) as f:
+        rows = list(csv.reader(f))
+
+    # Find the "Run","Duration" header and count rows after it
+    header_idx = next(
+        i for i, r in enumerate(rows) if r and r[0] == "Run" and r[1] == "Duration"
+    )
+    data_rows = [r for r in rows[header_idx + 1 :] if r]
+    assert len(data_rows) == n
+
+
+def test_critical_path_analysis_deterministic_under_python_random_seed():
+    """Running critical path analysis twice after identical random.seed calls
+    yields identical frequencies.
+
+    Note: `get_critical_path_analysis`'s own `seed=` parameter only seeds
+    numpy, but the Distribution classes sample via Python's `random` module.
+    So to get determinism we seed `random` explicitly before each call.
+    """
+    import random
+
+    p = Project(name="CP determinism")
+    a = Task(name="A", min_duration=1, mode_duration=2, max_duration=5)
+    b = Task(name="B", min_duration=1, mode_duration=3, max_duration=6)
+    c = Task(name="C", min_duration=1, mode_duration=2, max_duration=4)
+    p.add_task(a)
+    p.add_task(b, depends_on=[a])
+    p.add_task(c, depends_on=[a])
+
+    random.seed(2024)
+    first = p.get_critical_path_analysis(n=500)
+    random.seed(2024)
+    second = p.get_critical_path_analysis(n=500)
+
+    for name in first:
+        assert first[name]["count"] == second[name]["count"]
+        assert first[name]["frequency"] == second[name]["frequency"]
+
+
+def test_empty_project_estimate_returns_zero():
+    """A project with no tasks must estimate 0 without crashing."""
+    p = Project(name="Empty")
+    assert p.estimate() == 0.0
