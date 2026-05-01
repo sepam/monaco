@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from monaco import Project
-from monaco.config import (
+from planaco import Project
+from planaco.config import (
     ConfigError,
     build_project_from_config,
     get_seed_from_config,

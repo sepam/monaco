@@ -1,4 +1,4 @@
-from monaco import Task, Project
+from planaco import Task, Project
 
 # Create project
 project = Project(name="App Development", unit='days')

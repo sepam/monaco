@@ -1,7 +1,7 @@
 """
-Monaco: Probabilistic Project Planning with Monte Carlo Simulation.
+Planaco: Probabilistic Project Planning with Monte Carlo Simulation.
 
-Monaco is a Python library for estimating project completion times using
+Planaco is a Python library for estimating project completion times using
 Monte Carlo simulation. It models task durations as probability distributions
 and calculates project timelines while accounting for uncertainty and
 task dependencies.
@@ -24,7 +24,7 @@ Key Features
 
 Main Components
 ---------------
-Distribution classes (from ``monaco.distributions``):
+Distribution classes (from ``planaco.distributions``):
     - ``TriangularDistribution``: Three-point estimate (min, mode, max).
       Best for tasks where you can estimate optimistic, likely, and
       pessimistic durations.
@@ -49,7 +49,7 @@ Project:
 
 Quick Start
 -----------
->>> from monaco import Project, Task
+>>> from planaco import Project, Task
 >>>
 >>> # Create tasks with uncertainty (min, mode, max)
 >>> design = Task(name="Design", min_duration=5, mode_duration=7, max_duration=14)
@@ -69,7 +69,7 @@ Quick Start
 
 Using Distribution Objects
 --------------------------
->>> from monaco import Task, PERTDistribution
+>>> from planaco import Task, PERTDistribution
 >>>
 >>> # Use PERT distribution for smoother estimates
 >>> dist = PERTDistribution(minimum=5, mode=7, maximum=14)
@@ -78,7 +78,7 @@ Using Distribution Objects
 Configuration Files
 -------------------
 Projects can be defined in YAML configuration files for easy sharing
-and version control. See ``monaco.config`` for loading configurations.
+and version control. See ``planaco.config`` for loading configurations.
 
 Example YAML::
 
@@ -104,29 +104,29 @@ Example YAML::
 
 Command Line Interface
 ----------------------
-Monaco provides a CLI for running simulations::
+Planaco provides a CLI for running simulations::
 
-    $ monaco init              # Create template config file
-    $ monaco run config.yaml   # Run simulation
-    $ monaco stats config.yaml # Show statistics
-    $ monaco plot config.yaml  # Generate visualization
-    $ monaco graph config.yaml # Show dependency graph
+    $ planaco init              # Create template config file
+    $ planaco run config.yaml   # Run simulation
+    $ planaco stats config.yaml # Show statistics
+    $ planaco plot config.yaml  # Generate visualization
+    $ planaco graph config.yaml # Show dependency graph
 
 See Also
 --------
-monaco.distributions : Probability distribution classes.
-monaco.task : Task class for individual tasks.
-monaco.project : Project class for task collections.
-monaco.config : YAML configuration loading.
-monaco.cli : Command-line interface.
+planaco.distributions : Probability distribution classes.
+planaco.task : Task class for individual tasks.
+planaco.project : Project class for task collections.
+planaco.config : YAML configuration loading.
+planaco.cli : Command-line interface.
 
 Version
 -------
-0.1.2
+0.2.0
 """
 
 # Import order matters: distributions -> task -> project to avoid circular imports
-from monaco.distributions import (
+from planaco.distributions import (
     BetaDistribution,
     Distribution,
     LogNormalDistribution,
@@ -135,10 +135,10 @@ from monaco.distributions import (
     TriangularDistribution,
     UniformDistribution,
 )
-from monaco.task import Task
-from monaco.project import Project
+from planaco.task import Task
+from planaco.project import Project
 
-__version__ = "0.1.2"
+__version__ = "0.2.0"
 
 __all__ = [
     # Core classes

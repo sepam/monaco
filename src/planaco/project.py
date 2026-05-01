@@ -35,7 +35,7 @@ are simply summed (backward compatibility mode).
 
 Example
 -------
->>> from monaco import Project, Task
+>>> from planaco import Project, Task
 >>>
 >>> # Create tasks with uncertainty
 >>> backend = Task(name="Backend", min_duration=10, mode_duration=15, max_duration=20)
@@ -71,7 +71,7 @@ import networkx as nx
 import numpy as np
 import seaborn as sns
 
-from monaco.task import Task
+from planaco.task import Task
 
 
 
@@ -105,7 +105,7 @@ class Project:
 
     Example
     -------
-    >>> from monaco import Project, Task
+    >>> from planaco import Project, Task
     >>> project = Project(name="My Project", unit="days")
     >>> task1 = Task(name="Research", min_duration=5, mode_duration=7, max_duration=14)
     >>> task2 = Task(name="Development", min_duration=10, mode_duration=15, max_duration=25)
@@ -175,7 +175,7 @@ class Project:
         Parameters
         ----------
         task : Task Object
-            A subtask instantiated with monaco.Task()
+            A subtask instantiated with planaco.Task()
         depends_on : List[Task], optional
             List of tasks that must complete before this task can start.
             For sequential/linear projects, leave as None (default behavior).
@@ -712,7 +712,7 @@ class Project:
         return result
 
     def export_results(
-        self, n: int = 10000, format: str = "json", output: str = "monaco_results.json"
+        self, n: int = 10000, format: str = "json", output: str = "planaco_results.json"
     ) -> None:
         """Export simulation results and statistics to file.
 
@@ -723,7 +723,7 @@ class Project:
         format : str
             Output format: 'json' or 'csv' (default: 'json')
         output : str
-            Output file path (default: 'monaco_results.json')
+            Output file path (default: 'planaco_results.json')
 
         Raises
         ------

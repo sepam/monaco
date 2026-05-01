@@ -1,5 +1,5 @@
 """
-YAML configuration loader for Monaco projects.
+YAML configuration loader for Planaco projects.
 
 This module provides functions for loading, validating, and building
 Project instances from YAML configuration files. Configuration files
@@ -33,7 +33,7 @@ A valid configuration file has two main sections:
 
 Example
 -------
->>> from monaco.config import load_config, build_project_from_config
+>>> from planaco.config import load_config, build_project_from_config
 >>> config = load_config("project.yaml")
 >>> project = build_project_from_config(config)
 >>> stats = project.statistics(n=10000)
@@ -50,9 +50,9 @@ from typing import Any, Dict, Optional
 
 import yaml
 
-from monaco.distributions import DISTRIBUTION_REGISTRY, create_distribution
-from monaco.project import Project
-from monaco.task import Task
+from planaco.distributions import DISTRIBUTION_REGISTRY, create_distribution
+from planaco.project import Project
+from planaco.task import Task
 
 
 class ConfigError(Exception):
@@ -69,7 +69,7 @@ class ConfigError(Exception):
 
     Example
     -------
-    >>> from monaco.config import load_config, ConfigError
+    >>> from planaco.config import load_config, ConfigError
     >>> try:
     ...     config = load_config("invalid.yaml")
     ... except ConfigError as e:
@@ -351,8 +351,8 @@ def get_template_config(project_name: str = "My Project") -> str:
     str
         YAML configuration template as a string
     """
-    return f"""# Monaco Project Configuration
-# Documentation: https://github.com/sepam/monaco
+    return f"""# Planaco Project Configuration
+# Documentation: https://github.com/sepam/planaco
 #
 # Available distributions:
 #   - triangular: min_duration, mode_duration, max_duration (most common)

@@ -1,6 +1,6 @@
 # Documentation Improvement Execution Plan
 
-This document outlines the execution strategy and evaluation framework for addressing documentation gaps in the Monaco codebase.
+This document outlines the execution strategy and evaluation framework for addressing documentation gaps in the Planaco codebase.
 
 ---
 
@@ -113,7 +113,7 @@ Step 1.1.4: Private Method Docstrings
 ```
 
 **Testing:**
-- Run `python -c "from monaco import Project; help(Project)"`
+- Run `python -c "from planaco import Project; help(Project)"`
 - Verify all methods appear in help output
 - Check docstring renders correctly in IDE tooltips
 
@@ -141,9 +141,9 @@ Step 1.2.2: Public API Documentation
 ```
 
 **Testing:**
-- Run `python -c "import monaco; help(monaco)"`
+- Run `python -c "import planaco; help(planaco)"`
 - Verify package docstring displays correctly
-- Check `monaco.__doc__` is not None
+- Check `planaco.__doc__` is not None
 
 ---
 
@@ -173,7 +173,7 @@ Step 2.1.2: Inline Comments
 ```
 
 **Testing:**
-- Run `python -c "from monaco import Task; help(Task)"`
+- Run `python -c "from planaco import Task; help(Task)"`
 - Verify examples in docstrings are executable
 
 #### 2.2 `config.py` Documentation
@@ -199,7 +199,7 @@ Step 2.2.2: Inline Comments
 
 **Testing:**
 - Trigger each validation error and verify messages are helpful
-- Run `python -c "from monaco.config import load_config; help(load_config)"`
+- Run `python -c "from planaco.config import load_config; help(load_config)"`
 
 #### 2.3 Test Documentation
 
@@ -282,7 +282,7 @@ is used to calculate project duration. Without dependencies, tasks are
 assumed to be sequential (backward compatibility).
 
 Example:
-    >>> from monaco import Project, Task
+    >>> from planaco import Project, Task
     >>> backend = Task(name="Backend", min_duration=10, mode_duration=15, max_duration=20)
     >>> frontend = Task(name="Frontend", min_duration=8, mode_duration=12, max_duration=15)
     >>> integration = Task(name="Integration", min_duration=2, mode_duration=3, max_duration=5)
@@ -311,9 +311,9 @@ from collections import Counter
 
 # AFTER
 """
-Monaco: Probabilistic Project Planning with Monte Carlo Simulation.
+Planaco: Probabilistic Project Planning with Monte Carlo Simulation.
 
-Monaco is a Python library for estimating project completion times using
+Planaco is a Python library for estimating project completion times using
 Monte Carlo simulation. It models task durations as probability distributions
 and calculates project timelines while accounting for uncertainty and
 task dependencies.
@@ -335,7 +335,7 @@ Main Components:
         simulation and critical path analysis.
 
 Quick Start:
-    >>> from monaco import Project, Task, TriangularDistribution
+    >>> from planaco import Project, Task, TriangularDistribution
     >>>
     >>> # Create tasks with uncertainty
     >>> task1 = Task(name="Design", min_duration=5, mode_duration=7, max_duration=14)
@@ -352,17 +352,17 @@ Quick Start:
 
 Configuration:
     Projects can also be defined via YAML configuration files.
-    See monaco.config for loading configurations.
+    See planaco.config for loading configurations.
 
 Command Line:
-    Monaco provides a CLI tool for running simulations:
+    Planaco provides a CLI tool for running simulations:
 
-    $ monaco init          # Create template config
-    $ monaco run config.yaml   # Run simulation
-    $ monaco stats config.yaml # Show statistics
-    $ monaco plot config.yaml  # Generate visualization
+    $ planaco init          # Create template config
+    $ planaco run config.yaml   # Run simulation
+    $ planaco stats config.yaml # Show statistics
+    $ planaco plot config.yaml  # Generate visualization
 
-Version: 0.1.2
+Version: 0.2.0
 License: MIT
 """
 ```
@@ -415,10 +415,10 @@ License: MIT
 ```bash
 # 1. Check all modules have docstrings
 python -c "
-import monaco
-from monaco import distributions, task, project, config, cli
+import planaco
+from planaco import distributions, task, project, config, cli
 
-modules = [monaco, distributions, task, project, config, cli]
+modules = [planaco, distributions, task, project, config, cli]
 for m in modules:
     assert m.__doc__, f'{m.__name__} missing docstring'
     print(f'✓ {m.__name__} has docstring')
@@ -426,7 +426,7 @@ for m in modules:
 
 # 2. Check all public classes have docstrings
 python -c "
-from monaco import (
+from planaco import (
     Distribution, TriangularDistribution, UniformDistribution,
     NormalDistribution, PERTDistribution, LogNormalDistribution,
     BetaDistribution, Task, Project
@@ -446,7 +446,7 @@ for cls in classes:
 
 # 3. Check key methods have docstrings
 python -c "
-from monaco import Project
+from planaco import Project
 
 methods = [
     'add_task', 'estimate', 'statistics',
@@ -462,7 +462,7 @@ for method_name in methods:
 # 4. Verify examples are executable
 python -c "
 # Test example from __init__.py docstring
-from monaco import Project, Task
+from planaco import Project, Task
 
 task1 = Task(name='Design', min_duration=5, mode_duration=7, max_duration=14)
 task2 = Task(name='Build', min_duration=10, mode_duration=15, max_duration=25)
@@ -478,8 +478,8 @@ print('✓ Package docstring example executes correctly')
 "
 
 # 5. Run doctest on modules (if doctests added)
-python -m doctest -v src/monaco/project.py
-python -m doctest -v src/monaco/task.py
+python -m doctest -v src/planaco/project.py
+python -m doctest -v src/planaco/task.py
 ```
 
 ### Manual Verification
@@ -490,7 +490,7 @@ python -m doctest -v src/monaco/task.py
    - Verify tooltips show useful documentation
 
 2. **Help Function Test**
-   - Run `help(monaco)` in Python REPL
+   - Run `help(planaco)` in Python REPL
    - Run `help(Project)`, `help(Task)`, etc.
    - Verify output is comprehensive and readable
 
@@ -517,7 +517,7 @@ python -m doctest -v src/monaco/task.py
 ### Qualitative Criteria
 
 1. **Self-Sufficiency**: A developer can understand and use any public API by reading only its docstring
-2. **Discoverability**: `help(monaco)` provides a complete overview of the package
+2. **Discoverability**: `help(planaco)` provides a complete overview of the package
 3. **Executable Examples**: All code examples in docstrings run without modification
 4. **Algorithm Clarity**: Graph algorithms have inline comments explaining the approach
 

@@ -3,8 +3,8 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "monaco"
-version = "0.1.2"
+name = "planaco"
+version = "0.2.0"
 description = "Task and project estimation using Monte Carlo simulation"
 readme = "README.md"
 license = {text = "MIT"}
@@ -54,11 +54,11 @@ dev = [
 ]
 
 [project.scripts]
-monaco = "monaco.cli:main"
+planaco = "planaco.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/sepam/monaco"
-Repository = "https://github.com/sepam/monaco"
+Homepage = "https://github.com/sepam/planaco"
+Repository = "https://github.com/sepam/planaco"
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -131,7 +131,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["monaco"]
+known-first-party = ["planaco"]
 
 [tool.ruff.lint.per-file-ignores]
-"src/monaco/__init__.py" = ["F403", "F401", "I001", "E402"]  # Star imports and order are intentional
+"src/planaco/__init__.py" = ["F403", "F401", "I001", "E402"]  # Star imports and order are intentional

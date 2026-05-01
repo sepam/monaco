@@ -1,6 +1,6 @@
-# Monaco Documentation Gap Analysis
+# Planaco Documentation Gap Analysis
 
-This document identifies parts of the Monaco codebase that lack proper documentation.
+This document identifies parts of the Planaco codebase that lack proper documentation.
 
 ---
 
@@ -22,7 +22,7 @@ This document identifies parts of the Monaco codebase that lack proper documenta
 
 ### 1. `project.py` - HIGH PRIORITY
 
-**Location:** `src/monaco/project.py`
+**Location:** `src/planaco/project.py`
 
 #### Missing Documentation:
 
@@ -45,7 +45,7 @@ This document identifies parts of the Monaco codebase that lack proper documenta
 
 ### 2. `__init__.py` - HIGH PRIORITY
 
-**Location:** `src/monaco/__init__.py`
+**Location:** `src/planaco/__init__.py`
 
 #### Missing Documentation:
 
@@ -66,7 +66,7 @@ This document identifies parts of the Monaco codebase that lack proper documenta
 
 ### 3. `task.py` - MEDIUM PRIORITY
 
-**Location:** `src/monaco/task.py`
+**Location:** `src/planaco/task.py`
 
 #### Missing Documentation:
 
@@ -86,7 +86,7 @@ This document identifies parts of the Monaco codebase that lack proper documenta
 
 ### 4. `config.py` - MEDIUM PRIORITY
 
-**Location:** `src/monaco/config.py`
+**Location:** `src/planaco/config.py`
 
 #### Missing Documentation:
 
@@ -104,7 +104,7 @@ This document identifies parts of the Monaco codebase that lack proper documenta
 
 ### 5. `cli.py` - LOW PRIORITY
 
-**Location:** `src/monaco/cli.py`
+**Location:** `src/planaco/cli.py`
 
 #### Missing Documentation:
 

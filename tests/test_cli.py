@@ -1,4 +1,4 @@
-"""Tests for Monaco CLI commands."""
+"""Tests for Planaco CLI commands."""
 
 import json
 from pathlib import Path
@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from monaco.cli import main
+from planaco.cli import main
 
 # Get path to fixtures directory
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
@@ -37,17 +37,17 @@ class TestMainGroup:
         """Test --help flag."""
         result = runner.invoke(main, ["--help"])
         assert result.exit_code == 0
-        assert "Monaco" in result.output
+        assert "Planaco" in result.output
 
     def test_version(self, runner):
         """Test --version flag."""
         result = runner.invoke(main, ["--version"])
         assert result.exit_code == 0
-        assert "0.1.2" in result.output
+        assert "0.2.0" in result.output
 
 
 class TestInitCommand:
-    """Tests for monaco init command."""
+    """Tests for planaco init command."""
 
     def test_init_creates_file(self, runner):
         """Test that init creates a YAML file."""
@@ -77,7 +77,7 @@ class TestInitCommand:
 
 
 class TestStatsCommand:
-    """Tests for monaco stats command."""
+    """Tests for planaco stats command."""
 
     def test_stats_basic(self, runner, valid_config_path):
         """Test basic stats command."""
@@ -109,7 +109,7 @@ class TestStatsCommand:
 
 
 class TestRunCommand:
-    """Tests for monaco run command."""
+    """Tests for planaco run command."""
 
     def test_run_to_stdout(self, runner, valid_config_path):
         """Test run command outputs to stdout."""
@@ -171,7 +171,7 @@ class TestRunCommand:
 
 
 class TestPlotCommand:
-    """Tests for monaco plot command."""
+    """Tests for planaco plot command."""
 
     def test_plot_to_file(self, runner, valid_config_path):
         """Test plot command saves to file."""
@@ -224,7 +224,7 @@ class TestPlotCommand:
 
 
 class TestGraphCommand:
-    """Tests for monaco graph command."""
+    """Tests for planaco graph command."""
 
     def test_graph_to_file(self, runner, valid_config_path):
         """Test graph command saves to file."""

@@ -1,4 +1,4 @@
-"""Monaco CLI - Monte Carlo simulation for project estimation."""
+"""Planaco CLI - Monte Carlo simulation for project estimation."""
 
 import json
 import sys
@@ -7,8 +7,8 @@ from typing import Optional, Tuple
 
 import click
 
-from monaco import __version__
-from monaco.config import (
+from planaco import __version__
+from planaco.config import (
     ConfigError,
     build_project_from_config,
     get_seed_from_config,
@@ -58,34 +58,34 @@ def _setup_seed(config: dict, cli_seed: Optional[int]) -> None:
 @click.group()
 @click.version_option(version=__version__)
 def main() -> None:
-    """Monaco - Monte Carlo simulation for project estimation.
+    """Planaco - Monte Carlo simulation for project estimation.
 
     Define projects and tasks in YAML, run simulations, and get
     probabilistic completion time estimates.
 
     Examples:
 
-        monaco init my_project.yaml
+        planaco init my_project.yaml
 
-        monaco stats my_project.yaml
+        planaco stats my_project.yaml
 
-        monaco plot my_project.yaml -o chart.png
+        planaco plot my_project.yaml -o chart.png
     """
     pass
 
 
 @main.command()
-@click.argument("output", default="monaco_project.yaml")
+@click.argument("output", default="planaco_project.yaml")
 @click.option(
     "--name", "-n", default="My Project", help="Project name for the template"
 )
 def init(output: str, name: str) -> None:
     """Create a template YAML project file.
 
-    OUTPUT: Path for the new YAML file (default: monaco_project.yaml)
+    OUTPUT: Path for the new YAML file (default: planaco_project.yaml)
 
     Example:
-        monaco init my_project.yaml --name "Web App Development"
+        planaco init my_project.yaml --name "Web App Development"
     """
     output_path = Path(output)
 
@@ -100,7 +100,7 @@ def init(output: str, name: str) -> None:
 
     click.secho(f"Created template project file: {output}", fg="green")
     click.echo("\nEdit the file to define your tasks, then run:")
-    click.echo(f"  monaco stats {output}")
+    click.echo(f"  planaco stats {output}")
 
 
 @main.command()
@@ -130,7 +130,7 @@ def run(
     CONFIG_FILE: Path to the YAML project configuration file.
 
     Example:
-        monaco run project.yaml -n 10000 -o results.json
+        planaco run project.yaml -n 10000 -o results.json
     """
     try:
         config = load_config(config_file)
@@ -172,7 +172,7 @@ def stats(
     CONFIG_FILE: Path to the YAML project configuration file.
 
     Example:
-        monaco stats project.yaml -n 10000
+        planaco stats project.yaml -n 10000
     """
     try:
         config = load_config(config_file)
@@ -234,11 +234,11 @@ def plot(
     CONFIG_FILE: Path to the YAML project configuration file.
 
     Examples:
-        monaco plot project.yaml -o chart.png
+        planaco plot project.yaml -o chart.png
 
-        monaco plot project.yaml --cumulative
+        planaco plot project.yaml --cumulative
 
-        monaco plot project.yaml -p 50 -p 85 -p 95
+        planaco plot project.yaml -p 50 -p 85 -p 95
     """
     try:
         config = load_config(config_file)
@@ -280,9 +280,9 @@ def graph(config_file: str, output: Optional[str], no_durations: bool) -> None:
     CONFIG_FILE: Path to the YAML project configuration file.
 
     Examples:
-        monaco graph project.yaml
+        planaco graph project.yaml
 
-        monaco graph project.yaml -o dependencies.png
+        planaco graph project.yaml -o dependencies.png
     """
     try:
         config = load_config(config_file)

@@ -29,7 +29,7 @@ class TestProjectInheritanceRemoval:
         # BEFORE: FAIL (Project inherits from Task)
         # AFTER: PASS (Project is standalone)
         """
-        from monaco import Project, Task
+        from planaco import Project, Task
 
         assert not issubclass(
             Project, Task
@@ -41,7 +41,7 @@ class TestProjectInheritanceRemoval:
         # BEFORE: FAIL (inherited from Task)
         # AFTER: PASS (no inheritance)
         """
-        from monaco import Project
+        from planaco import Project
 
         p = Project(name="Test")
         assert not hasattr(
@@ -54,7 +54,7 @@ class TestProjectInheritanceRemoval:
         # BEFORE: FAIL (inherited from Task)
         # AFTER: PASS (no inheritance)
         """
-        from monaco import Project
+        from planaco import Project
 
         p = Project(name="Test")
         assert not hasattr(
@@ -67,7 +67,7 @@ class TestProjectInheritanceRemoval:
         # BEFORE: FAIL (inherited from Task)
         # AFTER: PASS (no inheritance)
         """
-        from monaco import Project
+        from planaco import Project
 
         p = Project(name="Test")
         assert not hasattr(p, "cdate"), "Project should not have cdate attribute"
@@ -77,7 +77,7 @@ class TestProjectInheritanceRemoval:
 
         # BEFORE: PASS, AFTER: PASS
         """
-        from monaco import Project, Task
+        from planaco import Project, Task
 
         p = Project(name="Test Project", unit="days")
         t1 = Task(name="Task1", min_duration=1, mode_duration=2, max_duration=3)
@@ -116,7 +116,7 @@ class TestSimulateMethodRemoval:
         # BEFORE: FAIL (_simulate exists)
         # AFTER: PASS (_simulate removed)
         """
-        from monaco import Project
+        from planaco import Project
 
         p = Project(name="Test")
         assert not hasattr(
@@ -128,7 +128,7 @@ class TestSimulateMethodRemoval:
 
         # BEFORE: PASS, AFTER: PASS
         """
-        from monaco import Project, Task
+        from planaco import Project, Task
 
         p = Project(name="Test")
         t = Task(name="Task", min_duration=1, mode_duration=2, max_duration=3)
@@ -154,7 +154,7 @@ class TestPEstRemoval:
         # BEFORE: FAIL (estimate() sets self.p_est)
         # AFTER: PASS (no side effect)
         """
-        from monaco import Project, Task
+        from planaco import Project, Task
 
         p = Project(name="Test")
         t = Task(name="Task", min_duration=1, mode_duration=2, max_duration=3)
@@ -175,7 +175,7 @@ class TestPEstRemoval:
 
         # BEFORE: PASS, AFTER: PASS
         """
-        from monaco import Project, Task
+        from planaco import Project, Task
 
         t1 = Task(name="T1", min_duration=5, mode_duration=5, max_duration=5)
         t2 = Task(name="T2", min_duration=3, mode_duration=3, max_duration=3)
@@ -202,7 +202,7 @@ class TestTaskCdateRemoval:
         # BEFORE: FAIL (Task has cdate)
         # AFTER: PASS (cdate removed)
         """
-        from monaco import Task
+        from planaco import Task
 
         t = Task(name="Test", min_duration=1, mode_duration=2, max_duration=3)
         assert not hasattr(
@@ -214,7 +214,7 @@ class TestTaskCdateRemoval:
 
         # BEFORE: PASS, AFTER: PASS
         """
-        from monaco import Task
+        from planaco import Task
 
         t = Task(name="Test", min_duration=1, mode_duration=2, max_duration=3)
         assert hasattr(t, "task_id"), "task_id is needed for dependency tracking"
@@ -239,7 +239,7 @@ class TestExportResultsEfficiency:
         import tempfile
         from unittest.mock import patch
 
-        from monaco import Project, Task
+        from planaco import Project, Task
 
         p = Project(name="Test")
         t = Task(name="Task", min_duration=1, mode_duration=2, max_duration=3)
@@ -272,7 +272,7 @@ class TestExportResultsEfficiency:
         import json
         import tempfile
 
-        from monaco import Project, Task
+        from planaco import Project, Task
 
         p = Project(name="Export Test")
         t = Task(name="Task", min_duration=1, mode_duration=2, max_duration=3)
@@ -308,7 +308,7 @@ class TestNoOpCodeRemoval:
         """
         import inspect
 
-        from monaco import cli
+        from planaco import cli
 
         # Get the source code of cli module
         source = inspect.getsource(cli)
@@ -337,7 +337,7 @@ class TestCleanImports:
         # Get path relative to this test file
         test_dir = os.path.dirname(os.path.abspath(__file__))
         project_root = os.path.dirname(test_dir)
-        init_path = os.path.join(project_root, "src", "monaco", "__init__.py")
+        init_path = os.path.join(project_root, "src", "planaco", "__init__.py")
         with open(init_path) as f:
             content = f.read()
 
@@ -347,23 +347,23 @@ class TestCleanImports:
         )
 
     def test_module_has_all_defined(self):
-        """The monaco module should define __all__ for explicit exports.
+        """The planaco module should define __all__ for explicit exports.
 
         # BEFORE: FAIL (__all__ not defined)
         # AFTER: PASS (__all__ defined)
         """
-        import monaco
+        import planaco
 
         assert hasattr(
-            monaco, "__all__"
-        ), "monaco module should define __all__ to explicitly declare public API"
+            planaco, "__all__"
+        ), "planaco module should define __all__ to explicitly declare public API"
 
     def test_public_api_accessible(self):
         """Regression: All expected public classes should be importable.
 
         # BEFORE: PASS, AFTER: PASS
         """
-        from monaco import (
+        from planaco import (
             BetaDistribution,
             Distribution,
             LogNormalDistribution,
@@ -395,11 +395,11 @@ class TestCleanImports:
 class TestTestImportConsistency:
     """Verify that test files use consistent imports."""
 
-    def test_no_src_monaco_imports_in_tests(self):
-        """Test files should import from 'monaco', not 'src.monaco'.
+    def test_no_src_planaco_imports_in_tests(self):
+        """Test files should import from 'planaco', not 'src.planaco'.
 
-        # BEFORE: FAIL (test_task.py uses 'from src.monaco')
-        # AFTER: PASS (all tests use 'from monaco')
+        # BEFORE: FAIL (test_task.py uses 'from src.planaco')
+        # AFTER: PASS (all tests use 'from planaco')
         """
         import os
 
@@ -408,8 +408,8 @@ class TestTestImportConsistency:
         issues = []
 
         # Pattern to search for (split to avoid self-detection)
-        bad_import = "from " + "src.monaco"
-        bad_import2 = "import " + "src.monaco"
+        bad_import = "from " + "src.planaco"
+        bad_import2 = "import " + "src.planaco"
 
         for filename in os.listdir(test_dir):
             if filename.startswith("test_") and filename.endswith(".py"):
@@ -423,8 +423,8 @@ class TestTestImportConsistency:
                     issues.append(filename)
 
         assert not issues, (
-            f"These test files use 'src.monaco' instead of 'monaco': {issues}. "
-            "All test imports should use 'from monaco import ...' for consistency."
+            f"These test files use 'src.planaco' instead of 'planaco': {issues}. "
+            "All test imports should use 'from planaco import ...' for consistency."
         )
 
 
@@ -441,7 +441,7 @@ class TestCoreRegressions:
 
         # BEFORE: PASS, AFTER: PASS
         """
-        from monaco import PERTDistribution, Project, Task, TriangularDistribution
+        from planaco import PERTDistribution, Project, Task, TriangularDistribution
 
         # Create project
         project = Project(name="Regression Test", unit="days")
@@ -488,7 +488,7 @@ class TestCoreRegressions:
         """
         import os
 
-        from monaco.config import build_project_from_config, load_config
+        from planaco.config import build_project_from_config, load_config
 
         # Get path relative to this test file
         test_dir = os.path.dirname(os.path.abspath(__file__))
@@ -509,7 +509,7 @@ class TestCoreRegressions:
         """
         from click.testing import CliRunner
 
-        from monaco.cli import main
+        from planaco.cli import main
 
         runner = CliRunner()
 

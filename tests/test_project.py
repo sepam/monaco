@@ -1,6 +1,6 @@
 import pytest
 
-from monaco import Project, Task
+from planaco import Project, Task
 
 
 def test_project_init_default():
@@ -674,7 +674,7 @@ def test_sequential_sum_matches_analytical_mean():
     import random
 
     random.seed(42)
-    from monaco.distributions import UniformDistribution
+    from planaco.distributions import UniformDistribution
 
     p = Project(name="Sequential Mean")
     p.add_task(Task(name="A", distribution=UniformDistribution(0.0, 10.0)))
@@ -700,7 +700,7 @@ def test_parallel_max_matches_analytical_mean():
     import random
 
     random.seed(123)
-    from monaco.distributions import UniformDistribution
+    from planaco.distributions import UniformDistribution
 
     p = Project(name="Parallel Max")
     start = Task(name="S", distribution=UniformDistribution(0.0, 0.0))

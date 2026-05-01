@@ -1,7 +1,7 @@
 .PHONY: help install install-dev test test-cov type-check lint format check clean build
 
 help:
-	@echo "Monaco Development Commands"
+	@echo "Planaco Development Commands"
 	@echo "============================"
 	@echo "install      Install package"
 	@echo "install-dev  Install with dev dependencies"
@@ -24,10 +24,10 @@ test:
 	pytest tests/ -v
 
 test-cov:
-	pytest tests/ -v --cov=monaco --cov-report=html --cov-report=term
+	pytest tests/ -v --cov=planaco --cov-report=html --cov-report=term
 
 type-check:
-	mypy src/monaco/
+	mypy src/planaco/
 
 lint:
 	ruff check src/ tests/

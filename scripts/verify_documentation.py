@@ -2,7 +2,7 @@
 """
 Documentation Quality Verification Script.
 
-This script measures documentation quality across the Monaco codebase
+This script measures documentation quality across the Planaco codebase
 and produces a report with scores based on the evaluation framework.
 
 Usage:
@@ -263,7 +263,7 @@ def verify_examples_execute(module_name: str) -> list[dict]:
 def print_report(metrics: list[ModuleMetrics], test_results: list[dict], verbose: bool = False):
     """Print human-readable documentation quality report."""
     print("=" * 70)
-    print("MONACO DOCUMENTATION QUALITY REPORT")
+    print("PLANACO DOCUMENTATION QUALITY REPORT")
     print("=" * 70)
     print()
 
@@ -405,7 +405,7 @@ def print_json_report(metrics: list[ModuleMetrics], test_results: list[dict]):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Verify Monaco documentation quality")
+    parser = argparse.ArgumentParser(description="Verify Planaco documentation quality")
     parser.add_argument("--verbose", "-v", action="store_true", help="Show detailed output")
     parser.add_argument("--json", action="store_true", help="Output as JSON")
     args = parser.parse_args()
@@ -413,7 +413,7 @@ def main():
     # Find project root
     script_dir = Path(__file__).parent
     project_root = script_dir.parent
-    src_dir = project_root / "src" / "monaco"
+    src_dir = project_root / "src" / "planaco"
     tests_dir = project_root / "tests"
 
     # Analyze source modules

@@ -4,7 +4,7 @@ import random
 
 import pytest
 
-from monaco.distributions import (
+from planaco.distributions import (
     DISTRIBUTION_REGISTRY,
     BetaDistribution,
     LogNormalDistribution,

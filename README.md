@@ -1,16 +1,16 @@
 <div align="center">
-  <img src="monaco.png" alt="Monaco" width="200"/>
+  <img src="planaco.png" alt="Planaco" width="200"/>
 
-  # Monaco
+  # Planaco
 
   **Probabilistic Project Planning with Monte Carlo Simulation**
 
   [![Python](https://img.shields.io/badge/python-3.8+-blue.svg?style=flat-square)](https://www.python.org)
-  [![License](https://img.shields.io/github/license/sepam/monaco?style=flat-square)](LICENSE.md)
+  [![License](https://img.shields.io/github/license/sepam/planaco?style=flat-square)](LICENSE.md)
   ![Status](https://img.shields.io/badge/status-alpha-orange?style=flat-square)
 
   <p align="center">
-    <a href="#why-monaco">Why Monaco?</a> •
+    <a href="#why-planaco">Why Planaco?</a> •
     <a href="#features">Features</a> •
     <a href="#installation">Installation</a> •
     <a href="#quick-start">Quick Start</a> •
@@ -23,13 +23,13 @@
 
 ---
 
-## Why Monaco?
+## Why Planaco?
 
 Estimating the time it takes to complete a task or project is hard. Traditional approaches use fixed estimates, but this ignores any uncertainty and life often gets in the way.
 
-**Monaco helps you make better estimates by modeling tasks as random processes**, accounting for uncertainty and task dependencies through Monte Carlo simulation.
+**Planaco helps you make better estimates by modeling tasks as random processes**, accounting for uncertainty and task dependencies through Monte Carlo simulation.
 
-> **Status:** Monaco is in **alpha** (v0.1.2). The public API may still change between releases.
+> **Status:** Planaco is in **alpha** (v0.2.0). The public API may still change between releases.
 
 ## Features
 
@@ -48,8 +48,8 @@ Estimating the time it takes to complete a task or project is hard. Traditional 
 Install from source:
 
 ```bash
-git clone https://github.com/sepam/monaco.git
-cd monaco
+git clone https://github.com/sepam/planaco.git
+cd planaco
 pip install .
 ```
 
@@ -59,10 +59,10 @@ pip install .
 
 ### Define Tasks with Uncertainty
 
-Instead of saying "this task takes 5 days", Monaco lets you model uncertainty:
+Instead of saying "this task takes 5 days", Planaco lets you model uncertainty:
 
 ```python
-from monaco import Task
+from planaco import Task
 
 task = Task(
     name='Develop Feature',
@@ -82,7 +82,7 @@ task = Task(
 Create complex project workflows with parallel and sequential task execution:
 
 ```python
-from monaco import Task, Project
+from planaco import Task, Project
 
 # Create a project
 project = Project(name='Web App Development', unit='days')
@@ -110,7 +110,7 @@ project.add_task(deploy, depends_on=[testing])
 
 ## Monte Carlo Simulation
 
-Monaco uses [Monte Carlo simulation](https://en.wikipedia.org/wiki/Monte_Carlo_method) to estimate project completion time. By running thousands of simulations, it leverages the [Central Limit Theorem](https://en.wikipedia.org/wiki/Central_limit_theorem) to provide probabilistic estimates for the completion of tasks and projects.
+Planaco uses [Monte Carlo simulation](https://en.wikipedia.org/wiki/Monte_Carlo_method) to estimate project completion time. By running thousands of simulations, it leverages the [Central Limit Theorem](https://en.wikipedia.org/wiki/Central_limit_theorem) to provide probabilistic estimates for the completion of tasks and projects.
 
 ### Run Simulation & Get Statistics
 
@@ -181,7 +181,7 @@ project.export_results(n=10000, format='csv', filename='results.csv')
 
 ### Probability Distributions
 
-Monaco supports six probability distributions, each suited for different estimation scenarios:
+Planaco supports six probability distributions, each suited for different estimation scenarios:
 
 #### Triangular Distribution (Default)
 Best for **three-point estimates** where you can identify optimistic, most likely, and pessimistic values.
@@ -231,7 +231,7 @@ task = Task(
 Classic **bell curve** centered on the mean. Best for well-understood, repeatable tasks.
 
 ```python
-from monaco import Task, NormalDistribution
+from planaco import Task, NormalDistribution
 
 task = Task(
     name="Code Review",
@@ -250,7 +250,7 @@ task = Task(
 **Right-skewed** distribution where delays are more likely than early completion. Realistic for many real-world tasks.
 
 ```python
-from monaco import Task, LogNormalDistribution
+from planaco import Task, LogNormalDistribution
 
 task = Task(
     name="Integration",
@@ -267,7 +267,7 @@ task = Task(
 **Most flexible** distribution with customizable shape via alpha and beta parameters.
 
 ```python
-from monaco import Task, BetaDistribution
+from planaco import Task, BetaDistribution
 
 task = Task(
     name="Research",
@@ -303,14 +303,14 @@ task = Task(
 
 ## Command Line Interface
 
-Monaco also ships with a `monaco` CLI that runs simulations from a YAML project file — useful for CI pipelines, shared team configs, and version-controlled estimates.
+Planaco also ships with a `planaco` CLI that runs simulations from a YAML project file — useful for CI pipelines, shared team configs, and version-controlled estimates.
 
 ```bash
-monaco init project.yaml                 # Create a template config
-monaco stats project.yaml -n 10000       # Print formatted statistics
-monaco run project.yaml -o results.json  # Export results (json or csv)
-monaco plot project.yaml -o chart.png    # Histogram or cumulative plot
-monaco graph project.yaml                # Visualize the task dependency graph
+planaco init project.yaml                 # Create a template config
+planaco stats project.yaml -n 10000       # Print formatted statistics
+planaco run project.yaml -o results.json  # Export results (json or csv)
+planaco plot project.yaml -o chart.png    # Histogram or cumulative plot
+planaco graph project.yaml                # Visualize the task dependency graph
 ```
 
 Example YAML config:
@@ -338,7 +338,7 @@ tasks:
       maximum: 25
 ```
 
-Run `monaco --help` or `monaco <command> --help` to see all available options, including `--seed` for reproducible results and `-p/--percentile` markers for plots.
+Run `planaco --help` or `planaco <command> --help` to see all available options, including `--seed` for reproducible results and `-p/--percentile` markers for plots.
 
 ---
 
@@ -357,8 +357,8 @@ python example/example_project.py
 Contributions are welcome! To set up a development environment:
 
 ```bash
-git clone https://github.com/sepam/monaco.git
-cd monaco
+git clone https://github.com/sepam/planaco.git
+cd planaco
 pip install -e ".[dev]"
 ```
 

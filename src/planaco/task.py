@@ -32,7 +32,7 @@ provides a convenient wrapper that:
 
 Example
 -------
->>> from monaco import Task
+>>> from planaco import Task
 >>> # Legacy style: three-point estimate
 >>> task = Task(
 ...     name="Development",
@@ -44,7 +44,7 @@ Example
 >>> duration = task.estimate()
 
 >>> # Modern style: use a Distribution object
->>> from monaco import PERTDistribution
+>>> from planaco import PERTDistribution
 >>> dist = PERTDistribution(minimum=5, mode=8, maximum=15)
 >>> task = Task(name="Development", distribution=dist)
 
@@ -57,7 +57,7 @@ distributions : Probability distribution classes.
 import uuid
 from typing import Optional
 
-from monaco.distributions import (
+from planaco.distributions import (
     DISTRIBUTION_REGISTRY,
     Distribution,
     create_distribution,
@@ -67,7 +67,7 @@ from monaco.distributions import (
 class Task:
     """A single task with probabilistic duration for Monte Carlo simulation.
 
-    Task is the fundamental building block for project planning in Monaco.
+    Task is the fundamental building block for project planning in Planaco.
     It represents a unit of work with uncertain duration, modeled as a
     probability distribution.
 
@@ -143,7 +143,7 @@ class Task:
 
         New style with Distribution object:
 
-        >>> from monaco.distributions import NormalDistribution
+        >>> from planaco.distributions import NormalDistribution
         >>> dist = NormalDistribution(mean=8.0, std_dev=2.0)
         >>> task = Task(name="Development", distribution=dist)
         """

@@ -1,7 +1,7 @@
 import pytest
 
-from monaco import Task
-from monaco.distributions import (
+from planaco import Task
+from planaco.distributions import (
     NormalDistribution,
     TriangularDistribution,
     UniformDistribution,
