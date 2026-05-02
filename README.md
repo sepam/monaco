@@ -10,6 +10,9 @@
   [![Python versions](https://img.shields.io/pypi/pyversions/planaco.svg?style=flat-square)](https://pypi.org/project/planaco/)
   [![License](https://img.shields.io/github/license/sepam/planaco?style=flat-square)](LICENSE.md)
   ![Status](https://img.shields.io/badge/status-alpha-orange?style=flat-square)
+  [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg?style=flat-square)](https://github.com/psf/black)
+  [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json&style=flat-square)](https://github.com/astral-sh/ruff)
+  [![Checked with mypy](https://img.shields.io/badge/mypy-checked-blue?style=flat-square)](https://mypy-lang.org/)
 
   <p align="center">
     <a href="#why-planaco">Why Planaco?</a> •
