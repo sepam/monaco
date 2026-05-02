@@ -122,7 +122,7 @@ planaco.cli : Command-line interface.
 
 Version
 -------
-0.2.0
+0.2.1
 """
 
 # Import order matters: distributions -> task -> project to avoid circular imports
@@ -138,7 +138,7 @@ from planaco.distributions import (
 from planaco.task import Task
 from planaco.project import Project
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 __all__ = [
     # Core classes
