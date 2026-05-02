@@ -1,7 +1,8 @@
 <div align="center">
-  <img src="planaco.png" alt="Planaco" width="200"/>
-
-  # Planaco
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="brand/planaco-lockup-dark.svg">
+    <img src="brand/planaco-lockup-light.svg" alt="planaco" width="320">
+  </picture>
 
   **Probabilistic Project Planning with Monte Carlo Simulation**
 
