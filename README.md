@@ -46,7 +46,11 @@ Estimating the time it takes to complete a task or project is hard. Traditional 
 
 ## Installation
 
-Install from source:
+```bash
+pip install planaco
+```
+
+Or install from source:
 
 ```bash
 git clone https://github.com/sepam/planaco.git
