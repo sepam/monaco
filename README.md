@@ -6,7 +6,8 @@
 
   **Probabilistic Project Planning with Monte Carlo Simulation**
 
-  [![Python](https://img.shields.io/badge/python-3.8+-blue.svg?style=flat-square)](https://www.python.org)
+  [![PyPI version](https://img.shields.io/pypi/v/planaco.svg?style=flat-square)](https://pypi.org/project/planaco/)
+  [![Python versions](https://img.shields.io/pypi/pyversions/planaco.svg?style=flat-square)](https://pypi.org/project/planaco/)
   [![License](https://img.shields.io/github/license/sepam/planaco?style=flat-square)](LICENSE.md)
   ![Status](https://img.shields.io/badge/status-alpha-orange?style=flat-square)
 
