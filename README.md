@@ -1,7 +1,7 @@
 <div align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="brand/planaco-lockup-dark.svg">
-    <img src="brand/planaco-lockup-light.svg" alt="planaco" width="320">
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sepam/planaco/v0.2.2/brand/planaco-lockup-dark.svg">
+    <img src="https://raw.githubusercontent.com/sepam/planaco/v0.2.2/brand/planaco-lockup-light.svg" alt="planaco" width="320">
   </picture>
 
   **Probabilistic Project Planning with Monte Carlo Simulation**
@@ -30,7 +30,7 @@ Estimating the time it takes to complete a task or project is hard. Traditional 
 
 **Planaco helps you make better estimates by modeling tasks as random processes**, accounting for uncertainty and task dependencies through Monte Carlo simulation.
 
-> **Status:** Planaco is in **alpha** (v0.2.1). The public API may still change between releases.
+> **Status:** Planaco is in **alpha** (v0.2.2). The public API may still change between releases.
 
 ## Features
 
@@ -79,7 +79,7 @@ task = Task(
 ```
 
 <div align="center">
-  <img src="example/task_definition.png" alt="Task Definition" width="600"/>
+  <img src="https://raw.githubusercontent.com/sepam/planaco/v0.2.2/example/task_definition.png" alt="Task Definition" width="600"/>
 </div>
 
 ### Build Projects with Dependencies
@@ -108,7 +108,7 @@ project.add_task(deploy, depends_on=[testing])
 ```
 
 <div align="center">
-  <img src="example/project_estimation.png" alt="Project Estimation" width="700"/>
+  <img src="https://raw.githubusercontent.com/sepam/planaco/v0.2.2/example/project_estimation.png" alt="Project Estimation" width="700"/>
 </div>
 
 ---
@@ -152,7 +152,7 @@ project.plot(n=10000, hist=True)
 ```
 
 <div align="center">
-  <img src="example/monte_carlo_estimation.png" alt="Monte Carlo Histogram" width="550"/>
+  <img src="https://raw.githubusercontent.com/sepam/planaco/v0.2.2/example/monte_carlo_estimation.png" alt="Monte Carlo Histogram" width="550"/>
 </div>
 
 ### Cumulative Distribution
@@ -165,7 +165,7 @@ project.plot(n=10000, hist=False)
 ```
 
 <div align="center">
-  <img src="example/monte_carlo_cumulative.png" alt="Cumulative Distribution" width="550"/>
+  <img src="https://raw.githubusercontent.com/sepam/planaco/v0.2.2/example/monte_carlo_cumulative.png" alt="Cumulative Distribution" width="550"/>
 </div>
 
 The cumulative distribution shows the probability of completing the project within a given timeframe, accounting for both parallel and sequential task execution.

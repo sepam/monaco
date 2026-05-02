@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "planaco"
-version = "0.2.1"
+version = "0.2.2"
 description = "Task and project estimation using Monte Carlo simulation"
 readme = "README.md"
 license = {text = "MIT"}
